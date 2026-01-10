@@ -17,7 +17,7 @@ Acest plan folosește abordarea **Hybrid: Layer-first + Feature-driven** optimiz
 | ID  | Task                                                                              | Status       |
 | --- | --------------------------------------------------------------------------------- | ------------ |
 | 0.1 | Project Bootstrap - Next.js 14, TypeScript, Tailwind, shadcn/ui, folder structure | ✅ Completed |
-| 0.2 | Database Schema Implementation - Supabase, toate tabelele, RLS, seed data         | ⬜ Pending   |
+| 0.2 | Database Schema Implementation - Supabase, toate tabelele, RLS, seed data         | ✅ Completed |
 | 0.3 | Authentication Integration - Clerk, webhook sync, middleware                      | ⬜ Pending   |
 | 0.4 | Supabase Client Setup - Browser/server clients, TypeScript types                  | ⬜ Pending   |
 | 0.5 | File Storage Configuration - Supabase Storage, policies, limits                   | ⬜ Pending   |
@@ -334,6 +334,7 @@ Pentru fiecare task:
 
 <!-- Adaugă note despre progres, decizii, blocaje aici -->
 
-| Data       | Task                  | Note                                                                                                                                   |
-| ---------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-01-10 | 0.1 Project Bootstrap | ✅ Completat: Next.js 14 inițializat, structură de foldere creată, toate dependențele instalate, build și lint funcționează fără erori |
+| Data       | Task                  | Note                                                                                                                                                                                                                                                      |
+| ---------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-01-10 | 0.1 Project Bootstrap | ✅ Completat: Next.js 14 inițializat, structură de foldere creată, toate dependențele instalate, build și lint funcționează fără erori                                                                                                                    |
+| 2026-01-10 | 0.2 Database Schema   | ✅ Completat: Schema SQL completă (18 tabele), RLS policies pentru toate tabelele, seed data pentru 25+ KPIs și 200+ conturi din Planul de Conturi RO conform OMFP 1802/2014, documentație completă și script de setup. Ready pentru Supabase deployment. |
