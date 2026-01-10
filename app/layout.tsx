@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,14 +21,21 @@ export const viewport: Viewport = {
   ],
 };
 
+/**
+ * Layout rădăcină al aplicației FinGuard.
+ * 
+ * Include ClerkProvider pentru autentificare și gestionarea sesiunii.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ro" suppressHydrationWarning>
-      <body className={inter.className}>{children}</body>
-    </html>
+    <ClerkProvider>
+      <html lang="ro" suppressHydrationWarning>
+        <body className={inter.className}>{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

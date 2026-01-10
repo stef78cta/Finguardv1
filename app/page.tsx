@@ -1,10 +1,21 @@
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
 /**
- * Landing page principală FinGuard
- * Pagina de prezentare a produsului pentru vizitatori noi
+ * Landing page pentru FinGuard.
+ * 
+ * Redirecționează utilizatorii autentificați către dashboard,
+ * iar cei neautentificați văd landing page-ul cu CTA către sign-up.
  */
 export default function HomePage() {
+  const { userId } = auth();
+
+  // Dacă utilizatorul este autentificat, redirecționează către dashboard
+  if (userId) {
+    redirect('/dashboard');
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-16 text-center">
@@ -36,6 +47,10 @@ export default function HomePage() {
             Autentificare
           </Link>
         </div>
+
+        <p className="mt-8 text-sm text-gray-500 dark:text-gray-500">
+          ✨ 14 zile trial gratuit. Fără card necesar.
+        </p>
 
         <div className="mt-20 grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="rounded-lg border bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
