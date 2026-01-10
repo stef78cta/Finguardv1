@@ -14,13 +14,13 @@ Acest plan folosește abordarea **Hybrid: Layer-first + Feature-driven** optimiz
 
 ### PHASE 0: Foundation Setup
 
-| ID  | Task                                                                              | Status     |
-| --- | --------------------------------------------------------------------------------- | ---------- |
+| ID  | Task                                                                              | Status       |
+| --- | --------------------------------------------------------------------------------- | ------------ |
 | 0.1 | Project Bootstrap - Next.js 14, TypeScript, Tailwind, shadcn/ui, folder structure | ✅ Completed |
-| 0.2 | Database Schema Implementation - Supabase, toate tabelele, RLS, seed data         | ⬜ Pending |
-| 0.3 | Authentication Integration - Clerk, webhook sync, middleware                      | ⬜ Pending |
-| 0.4 | Supabase Client Setup - Browser/server clients, TypeScript types                  | ⬜ Pending |
-| 0.5 | File Storage Configuration - Supabase Storage, policies, limits                   | ⬜ Pending |
+| 0.2 | Database Schema Implementation - Supabase, toate tabelele, RLS, seed data         | ⬜ Pending   |
+| 0.3 | Authentication Integration - Clerk, webhook sync, middleware                      | ⬜ Pending   |
+| 0.4 | Supabase Client Setup - Browser/server clients, TypeScript types                  | ⬜ Pending   |
+| 0.5 | File Storage Configuration - Supabase Storage, policies, limits                   | ⬜ Pending   |
 
 ### PHASE 1: MVP Features
 
@@ -334,6 +334,6 @@ Pentru fiecare task:
 
 <!-- Adaugă note despre progres, decizii, blocaje aici -->
 
-| Data | Task | Note                |
-| ---- | ---- | ------------------- |
+| Data       | Task                  | Note                                                                                                                                   |
+| ---------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-01-10 | 0.1 Project Bootstrap | ✅ Completat: Next.js 14 inițializat, structură de foldere creată, toate dependențele instalate, build și lint funcționează fără erori |
