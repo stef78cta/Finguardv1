@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
+import { ThemeProvider } from '@/components/providers/theme-provider';
+import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -24,7 +26,10 @@ export const viewport: Viewport = {
 /**
  * Layout rădăcină al aplicației FinGuard.
  * 
- * Include ClerkProvider pentru autentificare și gestionarea sesiunii.
+ * Include:
+ * - ClerkProvider pentru autentificare și gestionarea sesiunii
+ * - ThemeProvider pentru suport dark/light mode
+ * - Toaster pentru notificări toast
  */
 export default function RootLayout({
   children,
@@ -34,7 +39,17 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="ro" suppressHydrationWarning>
-        <body className={inter.className}>{children}</body>
+        <body className={inter.className}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </body>
       </html>
     </ClerkProvider>
   );
