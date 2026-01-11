@@ -1,40 +1,90 @@
-import { UserButton } from '@clerk/nextjs';
+'use client';
+
+import { useState } from 'react';
+import { Sidebar } from '@/components/layout/sidebar';
+import { DashboardHeader } from '@/components/layout/header';
 
 /**
  * Layout pentru dashboard-ul FinGuard.
  * 
- * Include header-ul cu UserButton pentru gestionarea profilului.
+ * Arhitectură:
+ * - Sidebar persistent pe desktop, collapsible pe mobile
+ * - Header sticky cu company selector, theme toggle, user menu
+ * - Main content area cu padding adaptat pentru sidebar
+ * - Responsive design pentru toate device-urile
+ * 
+ * @param {object} props - Proprietăți layout
+ * @param {React.ReactNode} props.children - Conținut pagină
+ * @returns {JSX.Element} Dashboard layout structure
  */
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-8">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">
-              FinGuard
-            </h1>
-          </div>
-          
-          {/* User Button - Clerk component cu dropdown pentru profil */}
-          <UserButton
-            afterSignOutUrl="/"
-            appearance={{
-              elements: {
-                avatarBox: 'h-10 w-10',
-              },
-            }}
-          />
-        </div>
-      </header>
+  // State pentru controlul sidebar-ului pe mobile
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-      {/* Main Content */}
-      <main>{children}</main>
+  /**
+   * Toggle sidebar visibility pe mobile.
+   */
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  /**
+   * Închide sidebar-ul (folosit la click pe overlay sau link).
+   */
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
+  return (
+    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Sidebar - Desktop persistent, Mobile collapsible */}
+      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+
+      {/* Main Content Area */}
+      <div className="flex min-h-screen flex-col lg:pl-64">
+        {/* Header - Sticky top */}
+        <DashboardHeader onMenuClick={toggleSidebar} />
+
+        {/* Page Content */}
+        <main className="flex-1 p-4 lg:p-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
+
+        {/* Footer - Opțional */}
+        <footer className="border-t border-slate-200 bg-white px-4 py-6 dark:border-slate-800 dark:bg-slate-900 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                © 2026 FinGuard. Toate drepturile rezervate.
+              </p>
+              <div className="flex items-center gap-6">
+                <a
+                  href="/docs"
+                  className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                >
+                  Documentație
+                </a>
+                <a
+                  href="/support"
+                  className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                >
+                  Suport
+                </a>
+                <a
+                  href="/privacy"
+                  className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                >
+                  Confidențialitate
+                </a>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
