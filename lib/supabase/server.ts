@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 
 /**
  * Client Supabase pentru utilizare pe server-side (API routes, Server Actions).
@@ -14,7 +15,7 @@ import { createClient } from '@supabase/supabase-js';
  * @see https://supabase.com/docs/reference/javascript/initializing
  */
 
-let cachedClient: ReturnType<typeof createClient> | null = null;
+let cachedClient: ReturnType<typeof createClient<Database>> | null = null;
 
 /**
  * Obține clientul Supabase pentru server-side cu lazy initialization.
@@ -39,7 +40,7 @@ export function getSupabaseServer() {
     );
   }
 
-  cachedClient = createClient(supabaseUrl, supabaseServiceKey, {
+  cachedClient = createClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -53,6 +54,6 @@ export function getSupabaseServer() {
  * Alias pentru backwards compatibility.
  * @deprecated Folosește getSupabaseServer() în loc
  */
-export const supabaseServer = {
-  from: (table: string) => getSupabaseServer().from(table),
-};
+export function getSupabaseServerClient() {
+  return getSupabaseServer();
+}

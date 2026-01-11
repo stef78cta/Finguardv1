@@ -12,7 +12,9 @@
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
     "test": "playwright test",
-    "test:ui": "playwright test --ui"
+    "test:ui": "playwright test --ui",
+    "db:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > types/database.ts",
+    "db:types:local": "supabase gen types typescript --local > types/database.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.0.0",
