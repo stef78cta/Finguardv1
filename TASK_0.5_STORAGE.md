@@ -35,35 +35,43 @@ Task 0.5 implementează infrastructura completă pentru gestionarea fișierelor 
 ## 📁 Fișiere Create/Modificate
 
 ### 1. Database - Storage Setup SQL
+
 ```
 database/storage/storage_setup.sql
 ```
+
 - Creare bucket `trial-balance-files`
 - 4 politici RLS (INSERT, SELECT, UPDATE, DELETE)
 - 3 funcții helper pentru management
 - Limite: 10MB, MIME types Excel/CSV
 
 ### 2. TypeScript Utilities
+
 ```
 lib/supabase/storage.ts
 ```
+
 - Funcții pentru upload/download (browser și server)
 - Validare automată fișiere
 - Generare path securizat
 - Formatare și utilități
 
 ### 3. React Hooks
+
 ```
 lib/hooks/use-file-upload.ts
 ```
+
 - `useFileUpload` - upload single file cu progress
 - `useMultiFileUpload` - batch upload multiple files
 - `useDragAndDrop` - drag & drop support
 
 ### 4. TypeScript Types
+
 ```
 types/storage.ts
 ```
+
 - Interfețe complete pentru toate operațiunile
 - Type guards și validări
 - Enums pentru error handling
@@ -89,6 +97,7 @@ Allowed MIME types:
 ```
 
 **Path Format:**
+
 ```
 company_id/year/filename.ext
 
@@ -99,66 +108,80 @@ Exemplu:
 ### B. Row Level Security Policies
 
 #### Policy 1: Upload (INSERT)
+
 ```sql
 Users can upload files to their companies
 ```
+
 - Doar utilizatorii cu acces la companie pot uploada
 - Path-ul trebuie să înceapă cu company_id valid
 - Verificare prin `company_users` membership
 
 #### Policy 2: Download (SELECT)
+
 ```sql
 Users can download their company files
 ```
+
 - Orice rol (owner/admin/member/viewer) poate descărca
 - Verificare prin `company_users` membership
 
 #### Policy 3: Delete (DELETE)
+
 ```sql
 Users can delete their company files
 ```
+
 - **Restricții:**
   - Doar owner/admin pot șterge
   - Nu se pot șterge fișiere mai vechi de 90 zile (protecție audit)
 
 #### Policy 4: Update (UPDATE)
+
 ```sql
 Users can update their company file metadata
 ```
+
 - Doar owner/admin pot modifica metadata
 - Nu se poate schimba company_id (path principal)
 
 ### C. Helper Functions SQL
 
 #### 1. `storage.validate_file_path(path TEXT)`
+
 ```sql
 -- Validează format path: company_id/year/filename.ext
 -- Returnează: BOOLEAN
 ```
 
 **Validări:**
+
 - Minimum 3 segmente în path
 - Primul segment este UUID valid
 - Al doilea segment este an valid (1900-2100)
 
 #### 2. `storage.get_company_storage_stats(company_id UUID)`
+
 ```sql
 -- Obține statistici storage per companie
 -- Returnează: TABLE (total_files, total_size, avg_size, oldest_file, newest_file)
 ```
 
 **Utilizare:**
+
 ```sql
 SELECT * FROM storage.get_company_storage_stats('company-uuid');
 ```
 
 #### 3. `storage.cleanup_old_files(days_old INT)`
+
 ```sql
 -- Șterge fișiere vechi fără import asociat activ
 -- Returnează: INT (numărul de fișiere șterse)
 ```
 
 **Utilizare (maintenance jobs):**
+
 ```sql
 SELECT storage.cleanup_old_files(365); -- Șterge fișiere mai vechi de 1 an
 ```
@@ -211,17 +234,17 @@ function UploadComponent() {
         disabled={isUploading}
         accept=".xls,.xlsx,.csv"
       />
-      
+
       {isUploading && (
         <div>
           <ProgressBar value={progress} />
           <p>{progress}% completat</p>
         </div>
       )}
-      
+
       {error && <ErrorMessage>{error}</ErrorMessage>}
       {result && <SuccessMessage>Upload complet!</SuccessMessage>}
-      
+
       <button onClick={reset} disabled={isUploading}>
         Reset
       </button>
@@ -267,10 +290,10 @@ function BatchUploadComponent() {
         onChange={(e) => e.target.files && handleFiles(e.target.files)}
         disabled={isUploading}
       />
-      
+
       <div>Progress total: {totalProgress}%</div>
       <div>Succese: {successCount} / Erori: {errorCount}</div>
-      
+
       {files.map((fileState) => (
         <div key={fileState.id}>
           <span>{fileState.file?.name}</span>
@@ -290,7 +313,7 @@ import { useFileUpload, useDragAndDrop } from '@/lib/hooks/use-file-upload';
 
 function DropZoneComponent() {
   const { upload, isUploading, progress } = useFileUpload();
-  
+
   const { isDragging, dragProps } = useDragAndDrop({
     onDrop: (files) => {
       if (files.length > 0) {
@@ -317,7 +340,7 @@ function DropZoneComponent() {
       ) : (
         <p>Drag & drop un fișier sau click pentru a selecta</p>
       )}
-      
+
       {isUploading && <ProgressBar value={progress} />}
     </div>
   );
@@ -441,8 +464,8 @@ supabase db reset # Aplică toate migrations
 SELECT * FROM storage.buckets WHERE id = 'trial-balance-files';
 
 -- Verifică politicile RLS
-SELECT * FROM pg_policies 
-WHERE schemaname = 'storage' 
+SELECT * FROM pg_policies
+WHERE schemaname = 'storage'
 AND tablename = 'objects';
 ```
 
@@ -490,7 +513,7 @@ SELECT * FROM storage.objects WHERE bucket_id = 'trial-balance-files';
 
 ```sql
 -- Statistici per companie
-SELECT 
+SELECT
   c.name,
   s.total_files,
   s.total_size_mb,
@@ -511,18 +534,18 @@ import { createServerClient } from '@/lib/supabase/server';
 
 export async function POST() {
   const supabase = await createServerClient();
-  
+
   const { data, error } = await supabase.rpc('cleanup_old_files', {
     days_old: 365,
   });
-  
+
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-  
-  return Response.json({ 
-    success: true, 
-    filesDeleted: data 
+
+  return Response.json({
+    success: true,
+    filesDeleted: data,
   });
 }
 ```
@@ -535,7 +558,7 @@ import { getCompanyStorageStats, formatFileSize } from '@/lib/supabase/storage';
 
 async function StorageStatsComponent({ companyId }: { companyId: string }) {
   const stats = await getCompanyStorageStats(companyId);
-  
+
   return (
     <div>
       <h3>Utilizare Storage</h3>
@@ -586,20 +609,15 @@ try {
 ### Retry Logic
 
 ```typescript
-async function uploadWithRetry(
-  options: UploadFileOptions,
-  maxRetries = 3
-) {
+async function uploadWithRetry(options: UploadFileOptions, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await uploadFile(options);
     } catch (error) {
       if (i === maxRetries - 1) throw error;
-      
+
       // Wait exponential backoff
-      await new Promise(resolve => 
-        setTimeout(resolve, Math.pow(2, i) * 1000)
-      );
+      await new Promise((resolve) => setTimeout(resolve, Math.pow(2, i) * 1000));
     }
   }
 }
@@ -615,7 +633,7 @@ async function uploadWithRetry(
 -- În tabela trial_balance_imports
 ALTER TABLE trial_balance_imports
 ADD COLUMN file_path TEXT,
-ADD CONSTRAINT fk_file_path 
+ADD CONSTRAINT fk_file_path
   CHECK (storage.validate_file_path(file_path));
 ```
 
@@ -647,13 +665,13 @@ async function processImport(importId: string) {
     .select('file_path')
     .eq('id', importId)
     .single();
-  
+
   // Descarcă fișier
   const blob = await downloadFile({
     path: importData.file_path,
     asBlob: true,
   });
-  
+
   // Procesează fișierul
   const arrayBuffer = await blob.arrayBuffer();
   // ... parsing logic

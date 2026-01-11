@@ -3,19 +3,19 @@ import type { Database } from '@/types/database';
 
 /**
  * Client Supabase pentru utilizare pe client-side (browser).
- * 
+ *
  * Acest client respectă Row Level Security (RLS) și folosește
  * autentificarea utilizatorului curent din Clerk.
- * 
+ *
  * ⚠️ IMPORTANT: Folosește DOAR pe client-side (componente, hooks React).
  * Pentru server-side (API routes, Server Actions), folosește getSupabaseServer().
- * 
+ *
  * Use cases:
  * - Queries din componente React client-side
  * - Real-time subscriptions
  * - Operațiuni CRUD în contextul utilizatorului autentificat
  * - Orice operațiune care trebuie să respecte RLS policies
- * 
+ *
  * @see https://supabase.com/docs/guides/auth/server-side/creating-a-client
  */
 
@@ -24,35 +24,35 @@ let cachedClient: SupabaseBrowserClient | null = null;
 
 /**
  * Obține clientul Supabase pentru browser cu lazy initialization.
- * 
+ *
  * Clientul este creat doar când este folosit pentru prima dată,
  * și este cached pentru utilizări ulterioare.
- * 
+ *
  * Acest client:
  * - Respectă RLS policies (accesează doar datele permise utilizatorului)
  * - Gestionează automat token-urile de autentificare
  * - Sincronizează sesiunea între tab-uri
  * - Suportă real-time subscriptions
- * 
+ *
  * @returns {ReturnType<typeof createBrowserClient<Database>>} - Client Supabase type-safe
  * @throws {Error} - Dacă variabilele de mediu nu sunt setate
- * 
+ *
  * @example
  * ```typescript
  * // În componente React client-side
  * 'use client';
- * 
+ *
  * import { getSupabaseClient } from '@/lib/supabase/client';
- * 
+ *
  * export function MyComponent() {
  *   const supabase = getSupabaseClient();
- *   
+ *
  *   const fetchCompanies = async () => {
  *     const { data, error } = await supabase
  *       .from('companies')
  *       .select('*')
  *       .eq('is_active', true);
- *     
+ *
  *     if (error) throw error;
  *     return data;
  *   };
@@ -104,24 +104,24 @@ export function getSupabaseClient() {
 
 /**
  * Hook React pentru utilizarea clientului Supabase în componente.
- * 
+ *
  * Acest hook este o convenție pentru consistență cu alte hooks React.
  * În prezent returnează direct clientul, dar poate fi extins în viitor
  * pentru a include funcționalități suplimentare (ex: loading states).
- * 
+ *
  * @returns {ReturnType<typeof createBrowserClient<Database>>} - Client Supabase type-safe
- * 
+ *
  * @example
  * ```typescript
  * 'use client';
- * 
+ *
  * import { useSupabase } from '@/lib/supabase/client';
  * import { useEffect, useState } from 'react';
- * 
+ *
  * export function CompanyList() {
  *   const supabase = useSupabase();
  *   const [companies, setCompanies] = useState([]);
- *   
+ *
  *   useEffect(() => {
  *     const fetchData = async () => {
  *       const { data } = await supabase
@@ -131,7 +131,7 @@ export function getSupabaseClient() {
  *     };
  *     fetchData();
  *   }, [supabase]);
- *   
+ *
  *   return <div>{companies.map(c => c.name)}</div>;
  * }
  * ```
