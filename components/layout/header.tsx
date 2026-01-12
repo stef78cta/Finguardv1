@@ -1,7 +1,9 @@
 'use client';
 
 import { UserButton } from '@clerk/nextjs';
-import { Building2, ChevronDown } from 'lucide-react';
+import { Building2, ChevronDown, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -12,15 +14,8 @@ import {
 } from '@/components/ui/select';
 import { ThemeToggle } from '@/components/common/theme-toggle';
 import { MobileSidebarToggle } from './sidebar';
-
-/**
- * Mock data pentru companii - va fi înlocuit cu date reale din API.
- * TODO: Conectare cu API pentru gestionarea companiilor.
- */
-const mockCompanies = [
-  { id: '1', name: 'SC Exemplu SRL', cui: 'RO12345678' },
-  { id: '2', name: 'SC Test Company SRL', cui: 'RO87654321' },
-];
+import { useCompanies } from '@/hooks/use-companies';
+import type { Company } from '@/types/database';
 
 interface DashboardHeaderProps {
   /**
@@ -76,51 +71,108 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
 }
 
 /**
+ * Key pentru storage-ul local al companiei selectate.
+ */
+const SELECTED_COMPANY_KEY = 'finguard:selectedCompanyId';
+
+/**
  * Company Selector Component.
  * 
  * Permite utilizatorului să selecteze compania activă pentru care
  * vizualizează datele financiare. Afișează numele și CUI-ul companiei.
  * 
+ * Stochează selecția în localStorage pentru persistență între sesiuni.
+ * 
  * @returns {JSX.Element} Company selector dropdown
  */
 function CompanySelector() {
-  // TODO: Înlocui cu state management real (Redux/Context)
-  const selectedCompanyId = '1';
+  const { companies, loading } = useCompanies({ activeOnly: true });
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
+  /**
+   * Încarcă compania selectată din localStorage la mount.
+   */
+  useEffect(() => {
+    const savedCompanyId = localStorage.getItem(SELECTED_COMPANY_KEY);
+    if (savedCompanyId) {
+      setSelectedCompanyId(savedCompanyId);
+    }
+  }, []);
+
+  /**
+   * Selectează automat prima companie dacă nu există selecție.
+   */
+  useEffect(() => {
+    if (companies.length > 0 && !selectedCompanyId) {
+      const firstCompany = companies[0];
+      setSelectedCompanyId(firstCompany.id);
+      localStorage.setItem(SELECTED_COMPANY_KEY, firstCompany.id);
+    }
+  }, [companies, selectedCompanyId]);
+
+  /**
+   * Handler pentru schimbarea companiei active.
+   * Salvează selecția în localStorage pentru persistență.
+   */
   const handleCompanyChange = (companyId: string) => {
-    // TODO: Implementare logică schimbare companie activă
-    console.log('Selected company:', companyId);
+    setSelectedCompanyId(companyId);
+    localStorage.setItem(SELECTED_COMPANY_KEY, companyId);
+    
+    // Emit custom event pentru a notifica alte componente despre schimbare
+    window.dispatchEvent(
+      new CustomEvent('companyChanged', { detail: { companyId } })
+    );
   };
+
+  /**
+   * Găsește compania selectată din lista de companii.
+   */
+  const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex h-9 w-[200px] animate-pulse items-center rounded-md border border-slate-200 bg-slate-100 px-3 dark:border-slate-700 dark:bg-slate-800 md:w-[280px]">
+        <Building2 className="mr-2 h-4 w-4 text-slate-400" />
+        <div className="h-4 w-32 rounded bg-slate-200 dark:bg-slate-700" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
-      <Select value={selectedCompanyId} onValueChange={handleCompanyChange}>
+      <Select
+        value={selectedCompanyId || undefined}
+        onValueChange={handleCompanyChange}
+        disabled={companies.length === 0}
+      >
         <SelectTrigger className="h-9 w-[200px] border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 md:w-[280px]">
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-            <SelectValue placeholder="Selectează companie" />
+            <SelectValue placeholder="Selectează companie">
+              {selectedCompany ? (
+                <span className="truncate">{selectedCompany.name}</span>
+              ) : (
+                'Selectează companie'
+              )}
+            </SelectValue>
           </div>
         </SelectTrigger>
         <SelectContent>
-          {mockCompanies.length === 0 ? (
+          {companies.length === 0 ? (
             <div className="px-2 py-6 text-center">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Nu ai companii adăugate
               </p>
-              <Button
-                variant="link"
-                size="sm"
-                className="mt-2"
-                onClick={() => {
-                  // TODO: Navigate to companies page
-                  window.location.href = '/dashboard/companies';
-                }}
-              >
-                Adaugă prima companie
-              </Button>
+              <Link href="/dashboard/companies">
+                <Button variant="link" size="sm" className="mt-2 gap-1">
+                  <Plus className="h-3 w-3" />
+                  Adaugă prima companie
+                </Button>
+              </Link>
             </div>
           ) : (
-            mockCompanies.map((company) => (
+            companies.map((company) => (
               <SelectItem key={company.id} value={company.id}>
                 <div className="flex flex-col">
                   <span className="font-medium">{company.name}</span>
@@ -131,10 +183,124 @@ function CompanySelector() {
               </SelectItem>
             ))
           )}
+          
+          {/* Separator și link către gestionare companii */}
+          {companies.length > 0 && (
+            <>
+              <div className="my-1 h-px bg-slate-200 dark:bg-slate-700" />
+              <Link href="/dashboard/companies" className="block">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-2 text-xs"
+                >
+                  <Building2 className="h-3 w-3" />
+                  Gestionează companii
+                </Button>
+              </Link>
+            </>
+          )}
         </SelectContent>
       </Select>
     </div>
   );
+}
+
+/**
+ * Hook custom pentru a obține compania selectată curent.
+ * 
+ * Poate fi folosit în orice componentă care trebuie să știe
+ * care este compania activă.
+ * 
+ * @returns {Object} Obiect cu compania selectată și funcție de refresh
+ * 
+ * @example
+ * ```typescript
+ * function MyComponent() {
+ *   const { selectedCompany, refreshCompany } = useSelectedCompany();
+ *   
+ *   if (!selectedCompany) {
+ *     return <div>Selectează o companie</div>;
+ *   }
+ *   
+ *   return <div>{selectedCompany.name}</div>;
+ * }
+ * ```
+ */
+export function useSelectedCompany() {
+  const { companies, loading, getCompany } = useCompanies({ activeOnly: true });
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+
+  // Încarcă compania selectată din localStorage
+  useEffect(() => {
+    const savedCompanyId = localStorage.getItem(SELECTED_COMPANY_KEY);
+    if (savedCompanyId) {
+      setSelectedCompanyId(savedCompanyId);
+    }
+  }, []);
+
+  // Actualizează compania selectată când se schimbă ID-ul sau lista de companii
+  useEffect(() => {
+    if (selectedCompanyId) {
+      const company = companies.find((c) => c.id === selectedCompanyId);
+      if (company) {
+        setSelectedCompany(company);
+      } else {
+        // Compania nu mai există sau nu este disponibilă
+        // Încercăm să o obținem direct de la API
+        getCompany(selectedCompanyId).then((result) => {
+          if (result.success && result.data) {
+            setSelectedCompany(result.data);
+          } else {
+            // Compania nu a fost găsită, resetăm selecția
+            setSelectedCompanyId(null);
+            setSelectedCompany(null);
+            localStorage.removeItem(SELECTED_COMPANY_KEY);
+          }
+        });
+      }
+    } else if (companies.length > 0) {
+      // Auto-selectează prima companie dacă nu există selecție
+      const firstCompany = companies[0];
+      setSelectedCompanyId(firstCompany.id);
+      setSelectedCompany(firstCompany);
+      localStorage.setItem(SELECTED_COMPANY_KEY, firstCompany.id);
+    }
+  }, [selectedCompanyId, companies, getCompany]);
+
+  // Ascultă pentru schimbări de companie de la alte componente
+  useEffect(() => {
+    const handleCompanyChange = (event: CustomEvent) => {
+      const { companyId } = event.detail;
+      setSelectedCompanyId(companyId);
+    };
+
+    window.addEventListener('companyChanged', handleCompanyChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('companyChanged', handleCompanyChange as EventListener);
+    };
+  }, []);
+
+  /**
+   * Funcție pentru a reîmprospăta datele companiei selectate.
+   */
+  const refreshCompany = async () => {
+    if (selectedCompanyId) {
+      const result = await getCompany(selectedCompanyId);
+      if (result.success && result.data) {
+        setSelectedCompany(result.data);
+      }
+    }
+  };
+
+  return {
+    selectedCompany,
+    selectedCompanyId,
+    loading,
+    refreshCompany,
+  };
 }
 
 /**
@@ -163,12 +329,12 @@ export function Breadcrumbs({
             <ChevronDown className="mx-2 h-4 w-4 rotate-[-90deg] text-slate-400" />
           )}
           {item.href ? (
-            <a
+            <Link
               href={item.href}
               className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
             >
               {item.label}
-            </a>
+            </Link>
           ) : (
             <span className="font-medium text-slate-900 dark:text-slate-50">
               {item.label}
