@@ -11,26 +11,51 @@ import { getSupabaseServer } from '@/lib/supabase/server';
  * Necesită autentificare Clerk și acces la compania asociată.
  */
 
+interface ImportRecordWithRelations {
+  id: string;
+  company_id: string;
+  uploaded_by: string;
+  source_file_name: string | null;
+  file_size_bytes: number | null;
+  source_file_url: string | null;
+  period_start: string;
+  period_end: string;
+  status: string;
+  error_message: string | null;
+  validation_errors: {
+    errors?: string[];
+    warnings?: string[];
+    totals?: {
+      totalClosingDebit?: number;
+      totalClosingCredit?: number;
+    };
+  } | null;
+  created_at: string;
+  updated_at: string;
+  processed_at: string | null;
+  company: {
+    id: string;
+    name: string;
+    cui: string | null;
+    currency: string;
+    country_code: string;
+  };
+  user: {
+    id: string;
+    full_name: string | null;
+    email: string;
+  };
+}
+
+interface AccountStats {
+  closing_debit: number | string | null;
+  closing_credit: number | string | null;
+}
+
 /**
  * GET /api/imports/[id]
  *
- * Returnează detalii complete despre un import, incluzând:
- * - Metadata fișier
- * - Status procesare
- * - Rezultate validare
- * - Statistici (totaluri, număr conturi)
- * - Erori și avertismente
- * - Informații despre companie și utilizator
- *
- * Response:
- * - import: Trial Balance Import record
- * - company: Company info (name, cui)
- * - uploaded_by: User info (name, email)
- * - statistics: Agregări și totaluri
- * - signed_url: URL temporar pentru descărcare fișier (expiră după 1h)
- *
- * @example
- * GET /api/imports/550e8400-e29b-41d4-a716-446655440000
+ * Returnează detalii complete despre un import.
  */
 export async function GET(
   _request: NextRequest,
@@ -69,8 +94,7 @@ export async function GET(
 
     const supabase = getSupabaseServer();
 
-    // @ts-ignore - Supabase type inference issue with nested relations
-    const { data: importRecord, error: importError } = await supabase
+    const { data: importData, error: importError } = await supabase
       .from('trial_balance_imports')
       .select(
         `
@@ -92,7 +116,7 @@ export async function GET(
       .eq('id', importId)
       .single();
 
-    if (importError || !importRecord) {
+    if (importError || !importData) {
       if (importError?.code === 'PGRST116') {
         return NextResponse.json({ error: 'Import negăsit' }, { status: 404 });
       }
@@ -101,11 +125,12 @@ export async function GET(
       return NextResponse.json({ error: 'Eroare la obținerea importului' }, { status: 500 });
     }
 
+    const importRecord = importData as unknown as ImportRecordWithRelations;
+
     // ============================================================================
     // ETAPA 4: VERIFICARE ACCES LA COMPANIE
     // ============================================================================
 
-    // @ts-ignore - Supabase type inference issue
     const companyId = importRecord.company_id;
 
     const { data: companyAccess, error: accessError } = await supabase
@@ -126,7 +151,7 @@ export async function GET(
     // ETAPA 5: OBȚINE STATISTICI SUPLIMENTARE
     // ============================================================================
 
-    // Număr conturi salvate în DB (pentru verificare integritate)
+    // Număr conturi salvate în DB
     const { count: accountsCount, error: countError } = await supabase
       .from('trial_balance_accounts')
       .select('*', { count: 'exact', head: true })
@@ -137,23 +162,20 @@ export async function GET(
     }
 
     // Calculează statistici agregare
-    // @ts-ignore - Supabase type inference issue
-    const { data: accountsStats, error: statsError } = await supabase
+    const { data: accountsStatsData, error: statsError } = await supabase
       .from('trial_balance_accounts')
       .select('closing_debit, closing_credit')
       .eq('import_id', importId);
 
     let aggregatedStats = null;
-    if (!statsError && accountsStats) {
-      // @ts-ignore - Supabase type inference issue
+    if (!statsError && accountsStatsData) {
+      const accountsStats = accountsStatsData as unknown as AccountStats[];
+      
       const totalClosingDebit = accountsStats.reduce(
-        // @ts-ignore - Supabase type inference issue
         (sum, acc) => sum + (parseFloat(acc.closing_debit?.toString() || '0') || 0),
         0
       );
-      // @ts-ignore - Supabase type inference issue
       const totalClosingCredit = accountsStats.reduce(
-        // @ts-ignore - Supabase type inference issue
         (sum, acc) => sum + (parseFloat(acc.closing_credit?.toString() || '0') || 0),
         0
       );
@@ -174,21 +196,17 @@ export async function GET(
 
     let signedUrl = null;
 
-    // @ts-ignore - Supabase type inference issue
     if (importRecord.source_file_url) {
       try {
-        // @ts-ignore - Supabase type inference issue
         const { data: urlData, error: urlError } = await supabase.storage
           .from('trial-balance-files')
-          // @ts-ignore - Supabase type inference issue
-          .createSignedUrl(importRecord.source_file_url, 3600); // Expiră după 1 oră
+          .createSignedUrl(importRecord.source_file_url, 3600);
 
         if (!urlError && urlData) {
           signedUrl = urlData.signedUrl;
         }
       } catch (urlError) {
         console.error('Eroare la generarea URL semnat:', urlError);
-        // Nu bloca operațiunea dacă generarea URL eșuează
       }
     }
 
@@ -196,64 +214,38 @@ export async function GET(
     // ETAPA 7: RETURNARE REZULTATE
     // ============================================================================
 
-    // Extract validation data from JSONB
-    // @ts-ignore - Supabase type inference issue
-    const validationData = (importRecord.validation_errors as any) || {};
+    const validationData = importRecord.validation_errors || {};
     const errors = validationData.errors || [];
     const warnings = validationData.warnings || [];
     const storedTotals = validationData.totals || {};
 
     return NextResponse.json({
       data: {
-        // Import details
         import: {
-          // @ts-ignore - Supabase type inference issue
           id: importRecord.id,
-          // @ts-ignore - Supabase type inference issue
           company_id: importRecord.company_id,
-          // @ts-ignore - Supabase type inference issue
           uploaded_by: importRecord.uploaded_by,
-          // @ts-ignore - Supabase type inference issue
           file_name: importRecord.source_file_name,
-          // @ts-ignore - Supabase type inference issue
           file_size: importRecord.file_size_bytes,
-          // @ts-ignore - Supabase type inference issue
           file_path: importRecord.source_file_url,
-          // @ts-ignore - Supabase type inference issue
           period_start: importRecord.period_start,
-          // @ts-ignore - Supabase type inference issue
           period_end: importRecord.period_end,
-          // @ts-ignore - Supabase type inference issue
           status: importRecord.status,
-          // @ts-ignore - Supabase type inference issue
           error_message: importRecord.error_message,
           has_errors: errors.length > 0,
           has_warnings: warnings.length > 0,
           validation_errors: errors,
           validation_warnings: warnings,
-          // @ts-ignore - Supabase type inference issue
           created_at: importRecord.created_at,
-          // @ts-ignore - Supabase type inference issue
           updated_at: importRecord.updated_at,
-          // @ts-ignore - Supabase type inference issue
           processed_at: importRecord.processed_at,
         },
-
-        // Company info
-        // @ts-ignore - Supabase type inference pentru nested relations
         company: importRecord.company,
-
-        // Uploaded by
         uploaded_by: {
-          // @ts-ignore - Supabase type inference pentru nested relations
           id: importRecord.user.id,
-          // @ts-ignore - Supabase type inference pentru nested relations
           name: importRecord.user.full_name || 'Unknown',
-          // @ts-ignore - Supabase type inference pentru nested relations
           email: importRecord.user.email,
         },
-
-        // Statistics
         statistics: aggregatedStats || {
           total_accounts: accountsCount || 0,
           total_closing_debit: storedTotals.totalClosingDebit || 0,
@@ -261,8 +253,6 @@ export async function GET(
           balance_difference: (storedTotals.totalClosingDebit || 0) - (storedTotals.totalClosingCredit || 0),
           is_balanced: true,
         },
-
-        // Download URL
         signed_url: signedUrl,
       },
     });

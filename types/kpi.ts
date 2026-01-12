@@ -6,7 +6,6 @@
  */
 
 import type { Database } from './database';
-import type { TrialBalanceAccount } from './trial-balance';
 
 /**
  * Tipuri extract din database pentru referință rapidă

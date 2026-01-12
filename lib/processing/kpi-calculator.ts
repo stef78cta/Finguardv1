@@ -171,7 +171,7 @@ function calculateIntermediateValues(
     // Dacă valoarea este string, e o formulă intermediară
     if (typeof value === 'string') {
       try {
-        const intermediateValue = evaluateFormula(value, components, warnings);
+        const intermediateValue = evaluateFormula(value, components as unknown as Record<string, number>, warnings);
         intermediates[key] = intermediateValue;
       } catch (error) {
         warnings.push(`Eroare calcul valoare intermediară ${key}: ${error}`);

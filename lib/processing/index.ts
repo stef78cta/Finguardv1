@@ -11,21 +11,21 @@
 // ============================================================================
 
 export { parseFile } from './file-parser';
-export type { ParseOptions } from './file-parser';
-
-export { normalizeTrialBalanceData } from './normalizer';
-export type { NormalizationResult } from './normalizer';
 
 export { 
-  validateTrialBalance,
-  quickValidate,
-  type ValidatorFunction 
-} from './validator';
+  normalizeTrialBalance,
+  isAccountBalanced,
+  calculateTotals,
+} from './normalizer';
+export type { NormalizationResult, BalanceTotals } from './normalizer';
+
+export { validateTrialBalance } from './validator';
 
 export { 
   processTrialBalance,
-  quickValidateFile
+  quickValidate,
 } from './processor';
+export type { ProcessingResult, ProcessingStatistics } from './processor';
 
 // ============================================================================
 // KPI CALCULATION ENGINE (Task 1.7)

@@ -11,29 +11,32 @@ import { getSupabaseServer } from '@/lib/supabase/server';
  * Necesită autentificare Clerk și acces la compania asociată.
  */
 
+interface ImportRecord {
+  id: string;
+  company_id: string;
+  period_start: string;
+  period_end: string;
+  validation_errors: {
+    totals?: {
+      totalClosingDebit?: number;
+      totalClosingCredit?: number;
+    };
+  } | null;
+}
+
+interface AccountRecord {
+  opening_debit: number | string | null;
+  opening_credit: number | string | null;
+  debit_turnover: number | string | null;
+  credit_turnover: number | string | null;
+  closing_debit: number | string | null;
+  closing_credit: number | string | null;
+}
+
 /**
  * GET /api/imports/[id]/accounts
  *
  * Returnează conturile dintr-o balanță de verificare cu opțiuni de filtrare și paginare.
- *
- * Query params:
- * - account_code: string (optional) - Filtrare după cod cont (partial match, ex: "40" găsește toate conturile care încep cu 40)
- * - account_name: string (optional) - Filtrare după denumire (case-insensitive, partial match)
- * - account_class: string (optional) - Filtrare după clasa contului (1-8)
- * - has_debit: boolean (optional) - Doar conturi cu sold debitor > 0
- * - has_credit: boolean (optional) - Doar conturi cu sold creditor > 0
- * - limit: number (optional, default: 100) - Număr rezultate per pagină
- * - offset: number (optional, default: 0) - Offset pentru paginare
- * - sortBy: string (optional, default: 'account_code') - Sortare: account_code, account_name, closing_debit, closing_credit
- * - sortOrder: string (optional, default: 'asc') - Ordine: asc, desc
- *
- * Response:
- * - data: TrialBalanceAccount[]
- * - pagination: { total, limit, offset, hasMore }
- * - import_summary: { period, total_accounts, total_debit, total_credit }
- *
- * @example
- * GET /api/imports/550e8400-e29b-41d4-a716-446655440000/accounts?account_class=4&has_credit=true&limit=50
  */
 export async function GET(
   request: NextRequest,
@@ -73,14 +76,13 @@ export async function GET(
     const supabase = getSupabaseServer();
 
     // Obține import pentru a valida existența și a obține company_id
-    // @ts-ignore - Supabase type inference issue
-    const { data: importRecord, error: importError } = await supabase
+    const { data: importData, error: importError } = await supabase
       .from('trial_balance_imports')
       .select('id, company_id, period_start, period_end, validation_errors')
       .eq('id', importId)
       .single();
 
-    if (importError || !importRecord) {
+    if (importError || !importData) {
       if (importError?.code === 'PGRST116') {
         return NextResponse.json({ error: 'Import negăsit' }, { status: 404 });
       }
@@ -89,11 +91,12 @@ export async function GET(
       return NextResponse.json({ error: 'Eroare la obținerea importului' }, { status: 500 });
     }
 
+    const importRecord = importData as unknown as ImportRecord;
+
     // Verifică acces la companie
     const { data: companyAccess, error: accessError } = await supabase
       .from('company_users')
       .select('role')
-      // @ts-ignore - Supabase type inference issue
       .eq('company_id', importRecord.company_id)
       .eq('user_id', user.id)
       .single();
@@ -164,7 +167,6 @@ export async function GET(
     // ETAPA 5: CONSTRUIRE QUERY
     // ============================================================================
 
-    // @ts-ignore - Supabase type inference issue
     let query = supabase
       .from('trial_balance_accounts')
       .select('*', { count: 'exact' })
@@ -172,27 +174,22 @@ export async function GET(
 
     // Aplică filtre
     if (accountCode) {
-      // Filtrare parțială (prefix match)
       query = query.like('account_code', `${accountCode}%`);
     }
 
     if (accountName) {
-      // Filtrare case-insensitive pe denumire (folosește ilike pentru PostgreSQL)
       query = query.ilike('account_name', `%${accountName}%`);
     }
 
     if (accountClass) {
-      // Filtrare după clasa contului (primul caracter din cod)
       query = query.like('account_code', `${accountClass}%`);
     }
 
     if (hasDebit) {
-      // Doar conturi cu sold debitor > 0
       query = query.gt('closing_debit', 0);
     }
 
     if (hasCredit) {
-      // Doar conturi cu sold creditor > 0
       query = query.gt('closing_credit', 0);
     }
 
@@ -222,39 +219,29 @@ export async function GET(
 
     let pageTotals = null;
     if (accounts && accounts.length > 0) {
-      // @ts-ignore - Supabase type inference issue
-      const totalOpeningDebit = accounts.reduce(
-        // @ts-ignore - Supabase type inference issue
+      const typedAccounts = accounts as unknown as AccountRecord[];
+      
+      const totalOpeningDebit = typedAccounts.reduce(
         (sum, acc) => sum + (parseFloat(acc.opening_debit?.toString() || '0') || 0),
         0
       );
-      // @ts-ignore - Supabase type inference issue
-      const totalOpeningCredit = accounts.reduce(
-        // @ts-ignore - Supabase type inference issue
+      const totalOpeningCredit = typedAccounts.reduce(
         (sum, acc) => sum + (parseFloat(acc.opening_credit?.toString() || '0') || 0),
         0
       );
-      // @ts-ignore - Supabase type inference issue
-      const totalDebitTurnover = accounts.reduce(
-        // @ts-ignore - Supabase type inference issue
+      const totalDebitTurnover = typedAccounts.reduce(
         (sum, acc) => sum + (parseFloat(acc.debit_turnover?.toString() || '0') || 0),
         0
       );
-      // @ts-ignore - Supabase type inference issue
-      const totalCreditTurnover = accounts.reduce(
-        // @ts-ignore - Supabase type inference issue
+      const totalCreditTurnover = typedAccounts.reduce(
         (sum, acc) => sum + (parseFloat(acc.credit_turnover?.toString() || '0') || 0),
         0
       );
-      // @ts-ignore - Supabase type inference issue
-      const totalClosingDebit = accounts.reduce(
-        // @ts-ignore - Supabase type inference issue
+      const totalClosingDebit = typedAccounts.reduce(
         (sum, acc) => sum + (parseFloat(acc.closing_debit?.toString() || '0') || 0),
         0
       );
-      // @ts-ignore - Supabase type inference issue
-      const totalClosingCredit = accounts.reduce(
-        // @ts-ignore - Supabase type inference issue
+      const totalClosingCredit = typedAccounts.reduce(
         (sum, acc) => sum + (parseFloat(acc.closing_credit?.toString() || '0') || 0),
         0
       );
@@ -294,17 +281,12 @@ export async function GET(
         sortOrder,
       },
       import_summary: {
-        // @ts-ignore - Supabase type inference issue
         import_id: importRecord.id,
-        // @ts-ignore - Supabase type inference issue
         period_start: importRecord.period_start,
-        // @ts-ignore - Supabase type inference issue
         period_end: importRecord.period_end,
         total_accounts: count || 0,
-        // @ts-ignore - Supabase type inference issue
-        total_debit: ((importRecord.validation_errors as any)?.totals?.totalClosingDebit) || 0,
-        // @ts-ignore - Supabase type inference issue
-        total_credit: ((importRecord.validation_errors as any)?.totals?.totalClosingCredit) || 0,
+        total_debit: importRecord.validation_errors?.totals?.totalClosingDebit || 0,
+        total_credit: importRecord.validation_errors?.totals?.totalClosingCredit || 0,
       },
       page_totals: pageTotals,
     });

@@ -12,13 +12,12 @@ import type {
   KPIDefinition,
   KPICalculationOptions,
   KPIBatchCalculationResult,
-  KPICalculationContext,
   KPIValueInsert,
   KPIFormula,
-  isValidKPIFormula
 } from '@/types/kpi';
+import { isValidKPIFormula } from '@/types/kpi';
 import type { TrialBalanceAccount } from '@/types/trial-balance';
-import { createServerClient } from '@/lib/supabase/server';
+import { getSupabaseServer } from '@/lib/supabase/server';
 import { extractFinancialComponents, validateFinancialComponents } from './financial-extractor';
 import { calculateKPIBatch, formatKPIResult } from './kpi-calculator';
 
@@ -57,7 +56,7 @@ export async function calculateAllKPIs(
   options: KPICalculationOptions = {}
 ): Promise<KPIBatchCalculationResult> {
   const startTime = Date.now();
-  const supabase = await createServerClient();
+  const supabase = getSupabaseServer();
   
   // Opțiuni default
   const {
@@ -69,21 +68,32 @@ export async function calculateAllKPIs(
     debug = false,
   } = options;
   
+  // Type pentru datele importului
+  interface ImportRecord {
+    id: string;
+    company_id: string;
+    period_start: string;
+    period_end: string;
+    status: string;
+  }
+
   try {
     // === STEP 1: Încărcare date import ===
     if (debug) console.log('\n📊 === KPI ENGINE START ===');
     if (debug) console.log(`Import ID: ${importId}`);
     if (debug) console.log(`Company ID: ${companyId}`);
     
-    const { data: importData, error: importError } = await supabase
+    const { data: rawImportData, error: importError } = await supabase
       .from('trial_balance_imports')
       .select('id, company_id, period_start, period_end, status')
       .eq('id', importId)
       .single();
     
-    if (importError || !importData) {
+    if (importError || !rawImportData) {
       throw new Error(`Import nu a fost găsit: ${importError?.message}`);
     }
+    
+    const importData = rawImportData as unknown as ImportRecord;
     
     if (importData.status !== 'completed') {
       throw new Error(`Import-ul trebuie să fie în status 'completed', nu '${importData.status}'`);
@@ -122,7 +132,9 @@ export async function calculateAllKPIs(
     if (debug) console.log(`Găsite ${kpiDefs.length} definiții KPI`);
     
     // Parse formule JSONB
-    const kpiDefinitions: KPIDefinition[] = kpiDefs.map(def => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const typedKpiDefs = kpiDefs as any[];
+    const kpiDefinitions: KPIDefinition[] = typedKpiDefs.map(def => ({
       ...def,
       parsedFormula: def.formula as unknown as KPIFormula,
     }));
@@ -153,7 +165,9 @@ export async function calculateAllKPIs(
     if (debug) console.log(`Găsite ${accounts.length} conturi`);
     
     // Conversie la tipul TrialBalanceAccount
-    const trialBalanceAccounts: TrialBalanceAccount[] = accounts.map(acc => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const typedAccounts = accounts as any[];
+    const trialBalanceAccounts: TrialBalanceAccount[] = typedAccounts.map(acc => ({
       accountCode: acc.account_code,
       accountName: acc.account_name,
       openingDebit: Number(acc.opening_debit),
@@ -228,7 +242,9 @@ export async function calculateAllKPIs(
           .eq('company_id', companyId);
         
         if (existingValues && existingValues.length > 0) {
-          const existingIds = new Set(existingValues.map(v => v.kpi_definition_id));
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const typedExistingValues = existingValues as any[];
+          const existingIds = new Set(typedExistingValues.map(v => v.kpi_definition_id));
           const newResults = successfulResults.filter(
             r => !existingIds.has(r.kpi_definition_id)
           );
@@ -350,7 +366,7 @@ export async function getCalculatedKPIs(
   periodEnd: string,
   categories?: string[]
 ) {
-  const supabase = await createServerClient();
+  const supabase = getSupabaseServer();
   
   let query = supabase
     .from('kpi_values')
@@ -391,7 +407,7 @@ export async function getCalculatedKPIs(
  * @param importId - ID import balanță
  */
 export async function deleteKPIValuesForImport(importId: string) {
-  const supabase = await createServerClient();
+  const supabase = getSupabaseServer();
   
   const { error } = await supabase
     .from('kpi_values')

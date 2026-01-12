@@ -186,8 +186,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verifică dacă utilizatorul poate face upload (owner, admin, member - NU viewer)
-    // @ts-expect-error - Supabase type inference issue
-    if (companyAccess.role === 'viewer') {
+    if ((companyAccess as { role: string }).role === 'viewer') {
       return NextResponse.json(
         { error: 'Rolul dumneavoastră (viewer) nu permite upload de balanțe' },
         { status: 403 }
@@ -307,8 +306,8 @@ export async function POST(request: NextRequest) {
       processed_at: new Date().toISOString(),
     };
 
-    // @ts-ignore - Supabase type inference issue with trial_balance_imports
-    const { data: importRecord, error: importError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: importRecord, error: importError } = await (supabase as any)
       .from('trial_balance_imports')
       .insert(importData)
       .select()
@@ -359,8 +358,8 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < accountsData.length; i += BATCH_SIZE) {
       const batch = accountsData.slice(i, i + BATCH_SIZE);
 
-      // @ts-ignore - Supabase type inference issue with trial_balance_accounts
-      const { error: accountsError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: accountsError } = await (supabase as any)
         .from('trial_balance_accounts')
         .insert(batch);
 
