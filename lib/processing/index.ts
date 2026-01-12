@@ -1,32 +1,78 @@
 /**
- * Trial Balance Processing Engine - Export Principal
+ * Processing Module - Export centralizat
  * 
- * Orchestrează parsarea, normalizarea și validarea balanțelor de verificare.
- * 
- * @module lib/processing
+ * Exportă toate funcționalitățile de procesare:
+ * - Trial Balance Processing (file-parser, normalizer, validator, processor)
+ * - KPI Calculation Engine (financial-extractor, kpi-calculator, kpi-engine)
  */
 
-export * from './file-parser';
-export * from './normalizer';
-export * from './validator';
-export * from './processor';
+// ============================================================================
+// TRIAL BALANCE PROCESSING (Task 1.4)
+// ============================================================================
 
-// Re-export tipuri pentru convenience
+export { parseFile } from './file-parser';
+export type { ParseOptions } from './file-parser';
+
+export { normalizeTrialBalanceData } from './normalizer';
+export type { NormalizationResult } from './normalizer';
+
+export { 
+  validateTrialBalance,
+  quickValidate,
+  type ValidatorFunction 
+} from './validator';
+
+export { 
+  processTrialBalance,
+  quickValidateFile
+} from './processor';
+
+// ============================================================================
+// KPI CALCULATION ENGINE (Task 1.7)
+// ============================================================================
+
+export {
+  extractFinancialComponents,
+  formatFinancialComponentsSummary,
+  validateFinancialComponents,
+} from './financial-extractor';
+
+export {
+  calculateKPI,
+  calculateKPIBatch,
+  formatKPIResult,
+  interpretKPIResult,
+} from './kpi-calculator';
+
+export {
+  calculateAllKPIs,
+  getCalculatedKPIs,
+  deleteKPIValuesForImport,
+  recalculateKPIs,
+  getKPISummary,
+} from './kpi-engine';
+
+// ============================================================================
+// TYPE RE-EXPORTS pentru convenience
+// ============================================================================
+
 export type {
+  // Trial Balance types
   TrialBalanceAccount,
-  RawTrialBalanceLine,
   ParseResult,
-  FileMetadata,
-  FormatDetectionResult,
-  ColumnMapping,
-  ValidationError,
-  ValidationWarning,
   ValidationResult,
-  ValidationStatistics,
   ProcessingOptions,
   ProcessingContext,
-  BalanceFormat,
 } from '@/types/trial-balance';
 
-// Export ProcessingResult from processor
-export type { ProcessingResult } from './processor';
+export type {
+  // KPI types
+  KPIDefinition,
+  KPIFormula,
+  FinancialComponents,
+  KPICalculationResult,
+  KPIBatchCalculationResult,
+  KPICalculationOptions,
+  KPICalculationMetadata,
+  KPICalculationContext,
+} from '@/types/kpi';
