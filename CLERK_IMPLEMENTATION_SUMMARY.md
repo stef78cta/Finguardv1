@@ -14,8 +14,8 @@ Toate cheile API Clerk au fost obținute din Dashboard și configurate în `.env
 ```env
 # Clerk Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_cHJvcGVyLWZvd2wtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA
-CLERK_SECRET_KEY=sk_test_2G21K85hUevMXKODpFeiQEDHgC7H6v71HAYDTtvt4p
-CLERK_BACKEND_API_KEY=sk_test_2G21K85hUevMXKODpFeiQEDHgC7H6v71HAYDTtvt4p
+CLERK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+CLERK_BACKEND_API_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 CLERK_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
