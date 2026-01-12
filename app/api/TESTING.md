@@ -1,573 +1,262 @@
-# FinGuard - API Testing Guide
+# API Testing Guide - FinGuard
 
-Ghid complet pentru testarea endpoint-urilor API create în Task 1.6.
+Ghid pentru testarea API-urilor implementate în FinGuard.
 
-**Data:** 12 Ianuarie 2026  
-**Status:** Ready for Testing
+## Reports API (Task 1.11)
 
----
+### GET /api/companies/[id]/reports
 
-## Prerequisites
+Lista rapoarte pentru o companie cu filtrare, sortare și paginare.
 
-1. **Server rulează local:** `npm run dev` (http://localhost:3000)
-2. **Supabase configurat:** Database cu toate tabelele din schema
-3. **Clerk configurat:** Autentificare funcțională
-4. **Utilizator autentificat:** Trebuie să obții JWT token din Clerk
-5. **Companie creată:** Trebuie să ai un company_id valid
+**Query Parameters:**
+- `reportType` (optional): Tip raport (`financial_analysis`, `kpi_dashboard`, `comparative_analysis`, `executive_summary`, `detailed_breakdown`)
+- `status` (optional): Status raport (`generating`, `completed`, `error`)
+- `sortBy` (optional): Câmp sortare (`created_at`, `title`, `report_type`)
+- `sortOrder` (optional): Direcție (`asc`, `desc`)
+- `page` (optional): Număr pagină (default: 1)
+- `perPage` (optional): Elemente per pagină (default: 10)
 
----
-
-## Obținere Token Autentificare
-
-### Metoda 1: Din Browser DevTools
-
-1. Deschide aplicația în browser
-2. Autentifică-te cu Clerk
-3. Deschide DevTools → Application → Cookies
-4. Caută cookie-ul `__session` (Clerk JWT token)
-5. Copiază valoarea
-
-### Metoda 2: Din Network Tab
-
-1. Autentifică-te în aplicație
-2. DevTools → Network
-3. Caută orice request către `/api/*`
-4. Headers → `Authorization: Bearer <token>`
-5. Copiază token-ul
-
----
-
-## 1. POST /api/upload
-
-Upload și procesare trial balance file.
-
-### Request
-
-```bash
-curl -X POST http://localhost:3000/api/upload \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -F "file=@/path/to/balanta_decembrie_2024.xlsx" \
-  -F "company_id=YOUR_COMPANY_UUID" \
-  -F "period_start=2024-12-01" \
-  -F "period_end=2024-12-31" \
-  -F "description=Balanța decembrie 2024"
-```
-
-### Postman
-
-- Method: `POST`
-- URL: `http://localhost:3000/api/upload`
-- Headers:
-  - `Authorization`: `Bearer YOUR_JWT_TOKEN`
-- Body: `form-data`
-  - `file`: (file) - Selectează fișier Excel/CSV
-  - `company_id`: (text) - UUID companie
-  - `period_start`: (text) - `2024-12-01`
-  - `period_end`: (text) - `2024-12-31`
-  - `description`: (text) - `Balanța decembrie 2024` (optional)
-
-### Response Success (201)
-
+**Response:**
 ```json
 {
   "success": true,
-  "message": "Balanță încărcată și procesată cu succes",
   "data": {
-    "import_id": "uuid-here",
-    "company_id": "company-uuid",
-    "file_name": "balanta_decembrie_2024.xlsx",
-    "file_size": 45678,
-    "period_start": "2024-12-01",
-    "period_end": "2024-12-31",
-    "accounts_count": 150,
-    "validation": {
-      "is_valid": true,
-      "errors_count": 0,
-      "warnings_count": 2
-    },
-    "totals": {
-      "totalOpeningDebit": 1000000.0,
-      "totalOpeningCredit": 1000000.0,
-      "totalDebitTurnover": 500000.0,
-      "totalCreditTurnover": 500000.0,
-      "totalClosingDebit": 1200000.0,
-      "totalClosingCredit": 1200000.0
-    },
-    "statistics": {
-      "totalDuration": 1250,
-      "parsingDuration": 450,
-      "normalizationDuration": 300,
-      "validationDuration": 500,
-      "totalLines": 150,
-      "successfulLines": 150,
-      "failedLines": 0,
-      "successRate": 100
-    }
-  },
-  "errors": [],
-  "warnings": [
-    {
-      "type": "DUAL_BALANCE",
-      "message": "Contul 401 are atât sold debitor cât și creditor",
-      "severity": "warning",
-      "accountCode": "401",
-      "lineNumber": 25
-    }
-  ]
-}
-```
-
-### Response Error (422 - Validation Failed)
-
-```json
-{
-  "success": false,
-  "error": "Validarea balanței a eșuat",
-  "errors": [
-    {
-      "type": "BALANCE_GLOBAL_MISMATCH",
-      "message": "Total debite (1200000.00) ≠ Total credite (1199999.00). Diferență: 1.00 RON",
-      "severity": "error"
-    }
-  ],
-  "warnings": [],
-  "statistics": {
-    "totalDuration": 1250,
-    "totalLines": 150,
-    "successfulLines": 150,
-    "successRate": 100
-  }
-}
-```
-
-### Response Error (400 - Bad Request)
-
-```json
-{
-  "error": "Fișierul este prea mare. Maxim 10MB permis.",
-  "details": {
-    "fileSize": 12000000,
-    "maxSize": 10485760
-  }
-}
-```
-
----
-
-## 2. GET /api/companies/[id]/imports
-
-Listă imports pentru o companie cu paginare și filtrare.
-
-### Request
-
-```bash
-curl -X GET "http://localhost:3000/api/companies/YOUR_COMPANY_UUID/imports?status=completed&year=2024&limit=10&offset=0&sortBy=created_at&sortOrder=desc" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Postman
-
-- Method: `GET`
-- URL: `http://localhost:3000/api/companies/{company_id}/imports`
-- Headers:
-  - `Authorization`: `Bearer YOUR_JWT_TOKEN`
-- Query Params:
-  - `status`: `completed` (optional: pending, processing, completed, failed)
-  - `year`: `2024` (optional)
-  - `month`: `12` (optional: 1-12)
-  - `limit`: `10` (optional, default: 50, max: 100)
-  - `offset`: `0` (optional, default: 0)
-  - `sortBy`: `created_at` (optional: created_at, period_start, file_name)
-  - `sortOrder`: `desc` (optional: asc, desc)
-
-### Response Success (200)
-
-```json
-{
-  "data": [
-    {
-      "id": "uuid-1",
-      "company_id": "company-uuid",
-      "uploaded_by": "user-uuid",
-      "source_file_name": "balanta_decembrie_2024.xlsx",
-      "file_size_bytes": 45678,
-      "period_start": "2024-12-01",
-      "period_end": "2024-12-31",
-      "status": "completed",
-      "error_message": null,
-      "validation_errors": {
-        "errors": [],
-        "warnings": [],
-        "totals": {...}
-      },
-      "created_at": "2024-12-15T10:30:00Z",
-      "updated_at": "2024-12-15T10:30:45Z",
-      "processed_at": "2024-12-15T10:30:45Z"
-    },
-    {
-      "id": "uuid-2",
-      "company_id": "company-uuid",
-      "uploaded_by": "user-uuid",
-      "source_file_name": "balanta_noiembrie_2024.xlsx",
-      "file_size_bytes": 43210,
-      "period_start": "2024-11-01",
-      "period_end": "2024-11-30",
-      "status": "completed",
-      "error_message": null,
-      "validation_errors": {...},
-      "created_at": "2024-11-15T14:20:00Z",
-      "updated_at": "2024-11-15T14:20:30Z",
-      "processed_at": "2024-11-15T14:20:30Z"
-    }
-  ],
-  "pagination": {
+    "reports": [
+      {
+        "id": "uuid",
+        "company_id": "uuid",
+        "source_import_id": "uuid",
+        "report_type": "financial_analysis",
+        "title": "Analiză Financiară - Ianuarie 2024",
+        "generated_by": "uuid",
+        "file_path": "/path/to/file.pdf",
+        "report_data": {},
+        "created_at": "2024-01-15T10:00:00Z",
+        "expires_at": null,
+        "companyName": "Company Name",
+        "periodFormatted": "Ianuarie 2024",
+        "isExpired": false,
+        "canDownload": true
+      }
+    ],
     "total": 25,
-    "limit": 10,
-    "offset": 0,
-    "hasMore": true,
-    "nextOffset": 10
-  },
-  "filters": {
-    "status": "completed",
-    "year": 2024,
-    "month": null,
-    "sortBy": "created_at",
-    "sortOrder": "desc"
+    "page": 1,
+    "perPage": 10,
+    "totalPages": 3,
+    "hasPrevious": false,
+    "hasNext": true
   }
 }
 ```
 
----
-
-## 3. GET /api/imports/[id]
-
-Detalii complete despre un import.
-
-### Request
-
+**Testing:**
 ```bash
-curl -X GET "http://localhost:3000/api/imports/IMPORT_UUID" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+# Test 1: Get all reports
+curl -X GET "http://localhost:3000/api/companies/{company-id}/reports" \
+  -H "Authorization: Bearer {clerk-token}"
+
+# Test 2: Filter by type
+curl -X GET "http://localhost:3000/api/companies/{company-id}/reports?reportType=kpi_dashboard" \
+  -H "Authorization: Bearer {clerk-token}"
+
+# Test 3: Pagination
+curl -X GET "http://localhost:3000/api/companies/{company-id}/reports?page=2&perPage=5" \
+  -H "Authorization: Bearer {clerk-token}"
 ```
 
-### Postman
+---
 
-- Method: `GET`
-- URL: `http://localhost:3000/api/imports/{import_id}`
-- Headers:
-  - `Authorization`: `Bearer YOUR_JWT_TOKEN`
+### POST /api/companies/[id]/reports
 
-### Response Success (200)
+Generează un raport nou pentru companie.
 
+**Request Body:**
 ```json
 {
+  "reportType": "financial_analysis",
+  "sourceImportId": "uuid",
+  "title": "Analiză Financiară Ianuarie",
+  "format": "pdf",
+  "includeCharts": true,
+  "includeDetails": true,
+  "includeComparison": false,
+  "language": "ro"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
   "data": {
-    "import": {
-      "id": "import-uuid",
-      "company_id": "company-uuid",
-      "uploaded_by": "user-uuid",
-      "file_name": "balanta_decembrie_2024.xlsx",
-      "file_size": 45678,
-      "file_path": "company-uuid/2024/balanta_decembrie_2024_1234567890.xlsx",
-      "period_start": "2024-12-01",
-      "period_end": "2024-12-31",
-      "status": "completed",
-      "error_message": null,
-      "has_errors": false,
-      "has_warnings": true,
-      "validation_errors": [],
-      "validation_warnings": [
-        {
-          "type": "DUAL_BALANCE",
-          "message": "Contul 401 are atât sold debitor cât și creditor",
-          "severity": "warning",
-          "accountCode": "401"
-        }
-      ],
-      "created_at": "2024-12-15T10:30:00Z",
-      "updated_at": "2024-12-15T10:30:45Z",
-      "processed_at": "2024-12-15T10:30:45Z"
-    },
-    "company": {
-      "id": "company-uuid",
-      "name": "ACME SRL",
-      "cui": "RO12345678",
-      "currency": "RON",
-      "country_code": "RO"
-    },
-    "uploaded_by": {
-      "id": "user-uuid",
-      "name": "Ion Popescu",
-      "email": "ion.popescu@example.com"
-    },
-    "statistics": {
-      "total_accounts": 150,
-      "total_closing_debit": 1200000.0,
-      "total_closing_credit": 1200000.0,
-      "balance_difference": 0.0,
-      "is_balanced": true
-    },
-    "signed_url": "https://storage.supabase.co/signed-url-here?token=..."
+    "reportId": "uuid",
+    "status": "generating",
+    "message": "Report generation started. You will be notified when it is ready."
   }
 }
+```
+
+**Testing:**
+```bash
+curl -X POST "http://localhost:3000/api/companies/{company-id}/reports" \
+  -H "Authorization: Bearer {clerk-token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reportType": "kpi_dashboard",
+    "sourceImportId": "{import-id}",
+    "format": "pdf",
+    "includeCharts": true
+  }'
 ```
 
 ---
 
-## 4. GET /api/imports/[id]/accounts
+### GET /api/reports/[id]
 
-Listă conturi din balanță cu paginare și filtrare.
+Obține detaliile unui raport specific.
 
-### Request
-
-```bash
-curl -X GET "http://localhost:3000/api/imports/IMPORT_UUID/accounts?account_class=4&has_credit=true&limit=50&offset=0&sortBy=account_code&sortOrder=asc" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Postman
-
-- Method: `GET`
-- URL: `http://localhost:3000/api/imports/{import_id}/accounts`
-- Headers:
-  - `Authorization`: `Bearer YOUR_JWT_TOKEN`
-- Query Params:
-  - `account_code`: `40` (optional - prefix search)
-  - `account_name`: `furnizori` (optional - case-insensitive search)
-  - `account_class`: `4` (optional: 1-8)
-  - `has_debit`: `true` (optional)
-  - `has_credit`: `true` (optional)
-  - `limit`: `100` (optional, default: 100, max: 500)
-  - `offset`: `0` (optional, default: 0)
-  - `sortBy`: `account_code` (optional: account_code, account_name, closing_debit, closing_credit)
-  - `sortOrder`: `asc` (optional: asc, desc)
-
-### Response Success (200)
-
+**Response:**
 ```json
 {
-  "data": [
-    {
-      "id": "account-uuid-1",
-      "import_id": "import-uuid",
-      "account_code": "401",
-      "account_name": "Furnizori",
-      "opening_debit": 0.0,
-      "opening_credit": 50000.0,
-      "debit_turnover": 45000.0,
-      "credit_turnover": 60000.0,
-      "closing_debit": 0.0,
-      "closing_credit": 65000.0,
-      "created_at": "2024-12-15T10:30:45Z"
-    },
-    {
-      "id": "account-uuid-2",
-      "import_id": "import-uuid",
-      "account_code": "401.01",
-      "account_name": "Furnizori - SC ABC SRL",
-      "opening_debit": 0.0,
-      "opening_credit": 20000.0,
-      "debit_turnover": 15000.0,
-      "credit_turnover": 25000.0,
-      "closing_debit": 0.0,
-      "closing_credit": 30000.0,
-      "created_at": "2024-12-15T10:30:45Z"
-    }
-  ],
-  "pagination": {
-    "total": 45,
-    "limit": 50,
-    "offset": 0,
-    "hasMore": false,
-    "nextOffset": null
-  },
-  "filters": {
-    "account_code": null,
-    "account_name": null,
-    "account_class": "4",
-    "has_debit": null,
-    "has_credit": true,
-    "sortBy": "account_code",
-    "sortOrder": "asc"
-  },
-  "import_summary": {
-    "import_id": "import-uuid",
-    "period_start": "2024-12-01",
-    "period_end": "2024-12-31",
-    "total_accounts": 150,
-    "total_debit": 1200000.0,
-    "total_credit": 1200000.0
-  },
-  "page_totals": {
-    "opening_debit": 0.0,
-    "opening_credit": 125000.0,
-    "debit_turnover": 105000.0,
-    "credit_turnover": 155000.0,
-    "closing_debit": 0.0,
-    "closing_credit": 175000.0
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "company_id": "uuid",
+    "report_type": "financial_analysis",
+    "title": "Analiză Financiară - Ianuarie 2024",
+    "file_path": "/path/to/file.pdf",
+    "created_at": "2024-01-15T10:00:00Z",
+    "companyName": "Company Name",
+    "periodFormatted": "Ianuarie 2024",
+    "fileSize": 2048576,
+    "pageCount": 15,
+    "isExpired": false,
+    "canDownload": true
   }
 }
+```
+
+**Testing:**
+```bash
+curl -X GET "http://localhost:3000/api/reports/{report-id}" \
+  -H "Authorization: Bearer {clerk-token}"
+```
+
+---
+
+### DELETE /api/reports/[id]
+
+Șterge un raport.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Report deleted successfully"
+}
+```
+
+**Testing:**
+```bash
+curl -X DELETE "http://localhost:3000/api/reports/{report-id}" \
+  -H "Authorization: Bearer {clerk-token}"
+```
+
+---
+
+### GET /api/reports/[id]/download
+
+Descarcă un raport în formatul specificat.
+
+**Query Parameters:**
+- `format` (required): Format download (`pdf`, `excel`)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "downloadUrl": "/storage/reports/file.pdf",
+    "filename": "analiza_financiara_ianuarie.pdf",
+    "expiresIn": 3600,
+    "message": "Download URL generated successfully"
+  }
+}
+```
+
+**Testing:**
+```bash
+# Download PDF
+curl -X GET "http://localhost:3000/api/reports/{report-id}/download?format=pdf" \
+  -H "Authorization: Bearer {clerk-token}"
+
+# Download Excel
+curl -X GET "http://localhost:3000/api/reports/{report-id}/download?format=excel" \
+  -H "Authorization: Bearer {clerk-token}"
 ```
 
 ---
 
 ## Error Responses
 
-### 401 Unauthorized
+Toate API-urile returnează erori în format consistent:
 
 ```json
 {
-  "error": "Autentificare necesară"
+  "success": false,
+  "error": "Error message"
 }
 ```
 
-### 403 Forbidden
-
-```json
-{
-  "error": "Nu aveți permisiuni pentru această companie"
-}
-```
-
-### 404 Not Found
-
-```json
-{
-  "error": "Import negăsit"
-}
-```
-
-### 500 Internal Server Error
-
-```json
-{
-  "error": "Eroare internă de server",
-  "details": "Error message here"
-}
-```
+**Status Codes:**
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request (validare eșuată)
+- `401` - Unauthorized (lipsă autentificare)
+- `403` - Forbidden (permisiuni insuficiente)
+- `404` - Not Found (resursă inexistentă)
+- `410` - Gone (raport expirat)
+- `500` - Internal Server Error
 
 ---
 
-## Testing Workflow
+## Securitate
 
-### 1. Setup Initial Data
+Toate API-urile sunt protejate prin:
 
-```bash
-# 1. Autentifică-te în aplicație pentru a obține token
-# Browser: http://localhost:3000/sign-in
-
-# 2. Creează o companie prin UI sau API
-# POST /api/companies (vezi documentația existentă)
-
-# 3. Notează company_id din response
-```
-
-### 2. Upload Trial Balance
-
-```bash
-# Pregătește un fișier Excel/CSV valid
-# Structură: Cont | Denumire | SD_initial | SC_initial | RD | RC | SD_final | SC_final
-
-curl -X POST http://localhost:3000/api/upload \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "file=@test_balance.xlsx" \
-  -F "company_id=YOUR_COMPANY_ID" \
-  -F "period_start=2024-12-01" \
-  -F "period_end=2024-12-31"
-
-# Notează import_id din response
-```
-
-### 3. Get Import Details
-
-```bash
-curl -X GET "http://localhost:3000/api/imports/IMPORT_ID" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-### 4. List Accounts
-
-```bash
-curl -X GET "http://localhost:3000/api/imports/IMPORT_ID/accounts?limit=10" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-### 5. List All Imports
-
-```bash
-curl -X GET "http://localhost:3000/api/companies/COMPANY_ID/imports?year=2024" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
+1. **Autentificare Clerk**: Token JWT în header Authorization
+2. **Verificare access companie**: User-ul trebuie să fie membru al companiei
+3. **Row Level Security**: Queries folosesc RLS policies din Supabase
+4. **Activity Logging**: Toate acțiunile sunt înregistrate în `activity_logs`
 
 ---
 
-## Validation Rules
+## Testing Checklist
 
-### File Validation
+### Reports API
 
-- **Max size:** 10MB
-- **Allowed types:** `.xlsx`, `.xls`, `.csv`
-- **MIME types:** `application/vnd.ms-excel`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `text/csv`
-
-### Trial Balance Validation
-
-1. **BALANCE_GLOBAL_MISMATCH:** Total debite = Total credite (toleranță 1 RON)
-2. **OPENING_BALANCE_MISMATCH:** Solduri inițiale echilibrate
-3. **TURNOVER_MISMATCH:** Rulaje echilibrate
-4. **CLOSING_BALANCE_MISMATCH:** Solduri finale echilibrate
-5. **INVALID_ACCOUNT:** Cont inexistent în Plan Conturi
-6. **ACCOUNT_ARITHMETIC_ERROR:** Sold final = Sold inițial + Rulaj
-7. **CLASS6_NOT_CLOSED:** Cheltuieli (clasa 6) cu sold ≠ 0
-8. **CLASS7_NOT_CLOSED:** Venituri (clasa 7) cu sold ≠ 0
-
----
-
-## Notes pentru Testing
-
-### TypeScript Issues
-
-Există erori TypeScript minore legate de tipurile Supabase (returnează `never` pentru `trial_balance_imports` și `trial_balance_accounts`). Acestea sunt suprimate cu `@ts-ignore` și **NU afectează funcționalitatea runtime**.
-
-**Soluție permanentă:** Regenerează tipurile Supabase după ce toate tabelele sunt create:
-
-```bash
-npm run db:types
-# sau
-npx supabase gen types typescript --project-id YOUR_PROJECT_ID > types/database.ts
-```
-
-### Database Schema
-
-Asigură-te că schema SQL completă este implementată în Supabase:
-
-- ✅ `users`
-- ✅ `companies`
-- ✅ `company_users`
-- ✅ `trial_balance_imports`
-- ✅ `trial_balance_accounts`
-- ✅ Storage bucket: `trial-balance-files`
-
-### File Upload Testing
-
-Pentru testing local, poți folosi fișiere Excel de test:
-
-1. Creează un fișier Excel simplu cu structura balanței
-2. Minim 8 coloane: Cont, Denumire, SD_init, SC_init, RD, RC, SD_final, SC_final
-3. Asigură-te că totalurile sunt echilibrate
+- [ ] GET /api/companies/[id]/reports - fără filtre
+- [ ] GET /api/companies/[id]/reports - cu filtru tip raport
+- [ ] GET /api/companies/[id]/reports - cu filtru status
+- [ ] GET /api/companies/[id]/reports - cu sortare
+- [ ] GET /api/companies/[id]/reports - cu paginare
+- [ ] POST /api/companies/[id]/reports - generare raport valid
+- [ ] POST /api/companies/[id]/reports - validare input invalid
+- [ ] POST /api/companies/[id]/reports - import inexistent
+- [ ] GET /api/reports/[id] - raport existent
+- [ ] GET /api/reports/[id] - raport inexistent
+- [ ] GET /api/reports/[id] - fără permisiuni
+- [ ] DELETE /api/reports/[id] - ștergere cu permisiuni owner
+- [ ] DELETE /api/reports/[id] - ștergere fără permisiuni
+- [ ] GET /api/reports/[id]/download?format=pdf
+- [ ] GET /api/reports/[id]/download?format=excel
+- [ ] GET /api/reports/[id]/download - raport expirat
 
 ---
 
-## Next Steps
+## Notes
 
-După ce toate testele pass:
-
-1. ✅ **Task 1.6 Complete** - API Endpoints funcționale
-2. ⬜ **Task 1.7** - KPI Calculation Engine
-3. ⬜ **Task 1.8** - KPI Dashboard UI
-4. ⬜ **Task 1.9** - Financial Statements Generation
-
----
-
-**Document Status:** Complete  
-**Last Updated:** 12 Ianuarie 2026  
-**Maintainer:** Development Team
+- **TODO Task 1.10**: Implementare efectivă generare PDF/Excel
+- **TODO Task 1.10**: Integrare cu Supabase Storage pentru fișiere
+- **TODO Phase 2**: Background jobs cu BullMQ pentru procesare
+- **TODO Phase 2**: Notificări email când raportul e gata
