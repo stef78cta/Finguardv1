@@ -32,7 +32,7 @@ Acest plan folosește abordarea **Hybrid: Layer-first + Feature-driven** optimiz
 | 1.2  | Dashboard Layout - Sidebar, header, responsive design             | ✅ Completed |
 | 1.3  | Company Management - CRUD API + UI                                | ✅ Completed |
 | 1.4  | Trial Balance Processing Engine - Parser, normalizer, validator   | ✅ Completed |
-| 1.5  | File Upload UI - Dropzone, progress, validation display           | ⬜ Pending   |
+| 1.5  | File Upload UI - Dropzone, progress, validation display           | ✅ Completed |
 | 1.6  | Upload API Endpoints - POST upload, GET imports                   | ⬜ Pending   |
 | 1.7  | KPI Calculation Engine - 15 KPIs, formulas, storage               | ⬜ Pending   |
 | 1.8  | KPI Dashboard - Cards, charts, filters                            | ⬜ Pending   |

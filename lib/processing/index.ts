@@ -27,3 +27,6 @@ export type {
   ProcessingContext,
   BalanceFormat,
 } from '@/types/trial-balance';
+
+// Export ProcessingResult from processor
+export type { ProcessingResult } from './processor';

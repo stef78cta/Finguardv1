@@ -238,7 +238,7 @@ function extractNumericValue(
  */
 function normalizeAccountCode(code: string, strict: boolean): string | null {
   // Curăță codul: elimină spații și caractere speciale (păstrăm . și cifre)
-  let cleaned = code.trim().replace(/[^\d.]/g, '');
+  const cleaned = code.trim().replace(/[^\d.]/g, '');
 
   if (!cleaned) {
     return null;
