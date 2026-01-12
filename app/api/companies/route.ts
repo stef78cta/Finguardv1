@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUserId } from '@/lib/auth/clerk';
-import { getUserCompanies, createCompany } from '@/lib/supabase/queries';
+import { getUserCompanies, createCompany, deleteCompany } from '@/lib/supabase/queries';
 import { getUserByClerkIdServer } from '@/lib/supabase/queries';
 import { logActivityServer } from '@/lib/supabase/queries';
 import type { TablesInsert } from '@/types/database';
@@ -179,23 +179,54 @@ export async function POST(request: NextRequest) {
     });
 
     if (relationError) {
-      console.error('Eroare la adăugarea relației user-company:', relationError);
-      // Nu returnăm eroare aici, compania a fost creată, doar relația a eșuat
-      // Poate fi rezolvată manual sau printr-un proces de recuperare
+      console.error('Eroare critică la adăugarea relației user-company:', relationError);
+
+      // ROLLBACK: Șterge compania creată pentru a preveni companii orfane
+      // Relația user-company este critică - fără ea, utilizatorul nu poate accesa compania
+      const { error: deleteError } = await deleteCompany(company.id);
+
+      if (deleteError) {
+        console.error('Eroare critică la rollback (ștergere companie):', deleteError);
+        // Situație critică: compania va rămâne orfană în DB
+        // Necesită intervenție manuală pentru curățare
+        return NextResponse.json(
+          {
+            error: 'Eroare critică la crearea companiei. Operațiunea nu a fost finalizată.',
+            details: 'Compania poate fi orfană în sistem. Contactează suportul.',
+            orphanedCompanyId: company.id,
+          },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error: 'Eroare la configurarea companiei. Operațiunea a fost anulată.',
+          details: 'Nu s-a putut stabili relația utilizator-companie.',
+        },
+        { status: 500 }
+      );
     }
 
-    // Logare activitate
-    await logActivityServer({
-      user_id: user.id,
-      company_id: company.id,
-      action: 'company.create',
-      entity_type: 'company',
-      entity_id: company.id,
-      new_values: companyData as any,
-      ip_address:
-        request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
-      user_agent: request.headers.get('user-agent') || null,
-    });
+    // Logare activitate (best effort - nu trebuie să blocheze operațiunea principală)
+    try {
+      await logActivityServer({
+        user_id: user.id,
+        company_id: company.id,
+        action: 'company.create',
+        entity_type: 'company',
+        entity_id: company.id,
+        new_values: companyData as any,
+        ip_address:
+          request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+        user_agent: request.headers.get('user-agent') || null,
+      });
+    } catch (auditError) {
+      // Logăm eroarea dar continuăm operațiunea
+      // Audit logging-ul nu trebuie să blocheze crearea companiei
+      console.error('AUDIT LOG FAILED pentru company.create:', auditError);
+      // TODO: Implementează retry mechanism sau alerting pentru audit failures
+    }
 
     return NextResponse.json(
       {

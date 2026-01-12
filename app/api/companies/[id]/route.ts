@@ -266,20 +266,27 @@ export async function PUT(
       );
     }
 
-    // Logare activitate
-    await logActivityServer({
-      user_id: user.id,
-      company_id: companyId,
-      action: 'company.update',
-      entity_type: 'company',
-      entity_id: companyId,
-      old_values: oldCompany as any,
-      new_values: updates as any,
-      ip_address: request.headers.get('x-forwarded-for') || 
-                  request.headers.get('x-real-ip') || 
-                  null,
-      user_agent: request.headers.get('user-agent') || null,
-    });
+    // Logare activitate (best effort - nu trebuie să blocheze operațiunea principală)
+    try {
+      await logActivityServer({
+        user_id: user.id,
+        company_id: companyId,
+        action: 'company.update',
+        entity_type: 'company',
+        entity_id: companyId,
+        old_values: oldCompany as any,
+        new_values: updates as any,
+        ip_address: request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') || 
+                    null,
+        user_agent: request.headers.get('user-agent') || null,
+      });
+    } catch (auditError) {
+      // Logăm eroarea dar continuăm operațiunea
+      // Audit logging-ul nu trebuie să blocheze actualizarea companiei
+      console.error('AUDIT LOG FAILED pentru company.update:', auditError);
+      // TODO: Implementează retry mechanism sau alerting pentru audit failures
+    }
 
     return NextResponse.json({
       data: company,
@@ -366,19 +373,26 @@ export async function DELETE(
       );
     }
 
-    // Logare activitate
-    await logActivityServer({
-      user_id: user.id,
-      company_id: companyId,
-      action: 'company.delete',
-      entity_type: 'company',
-      entity_id: companyId,
-      old_values: company as any,
-      ip_address: request.headers.get('x-forwarded-for') || 
-                  request.headers.get('x-real-ip') || 
-                  null,
-      user_agent: request.headers.get('user-agent') || null,
-    });
+    // Logare activitate (best effort - nu trebuie să blocheze operațiunea principală)
+    try {
+      await logActivityServer({
+        user_id: user.id,
+        company_id: companyId,
+        action: 'company.delete',
+        entity_type: 'company',
+        entity_id: companyId,
+        old_values: company as any,
+        ip_address: request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') || 
+                    null,
+        user_agent: request.headers.get('user-agent') || null,
+      });
+    } catch (auditError) {
+      // Logăm eroarea dar continuăm operațiunea
+      // Audit logging-ul nu trebuie să blocheze ștergerea companiei
+      console.error('AUDIT LOG FAILED pentru company.delete:', auditError);
+      // TODO: Implementează retry mechanism sau alerting pentru audit failures
+    }
 
     return NextResponse.json({
       success: true,

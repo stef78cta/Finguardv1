@@ -242,6 +242,9 @@ export function useSelectedCompany() {
 
   // Actualizează compania selectată când se schimbă ID-ul sau lista de companii
   useEffect(() => {
+    // useRef pentru tracking mount status - previne setState pe componente unmounted
+    let isMounted = true;
+
     if (selectedCompanyId) {
       const company = companies.find((c) => c.id === selectedCompanyId);
       if (company) {
@@ -250,6 +253,9 @@ export function useSelectedCompany() {
         // Compania nu mai există sau nu este disponibilă
         // Încercăm să o obținem direct de la API
         getCompany(selectedCompanyId).then((result) => {
+          // Verificăm dacă componenta e încă montată înainte de setState
+          if (!isMounted) return;
+
           if (result.success && result.data) {
             setSelectedCompany(result.data);
           } else {
@@ -267,6 +273,11 @@ export function useSelectedCompany() {
       setSelectedCompany(firstCompany);
       localStorage.setItem(SELECTED_COMPANY_KEY, firstCompany.id);
     }
+
+    // Cleanup function - marchează componenta ca unmounted
+    return () => {
+      isMounted = false;
+    };
   }, [selectedCompanyId, companies, getCompany]);
 
   // Ascultă pentru schimbări de companie de la alte componente

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -158,6 +158,31 @@ export function CompanyForm({
   
   // State pentru loading
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /**
+   * Sincronizează datele companiei cu formularul când se schimbă compania editată.
+   * 
+   * Acest effect rezolvă problema când editezi companii diferite succesiv:
+   * useState cu funcție de inițializare rulează doar o dată la mount, deci când
+   * editezi Compania A, apoi Compania B, formularul ar afișa în continuare datele
+   * Companiei A fără acest effect.
+   */
+  useEffect(() => {
+    if (mode === 'edit' && company) {
+      setFormData({
+        name: company.name,
+        cui: company.cui,
+        country_code: company.country_code,
+        currency: company.currency,
+        fiscal_year_start_month: company.fiscal_year_start_month,
+        address: company.address || '',
+        phone: company.phone || '',
+        logo_url: company.logo_url || '',
+      });
+    } else if (mode === 'create') {
+      setFormData(DEFAULT_FORM_VALUES);
+    }
+  }, [mode, company]);
 
   /**
    * Validează formularul și returnează erorile găsite.
