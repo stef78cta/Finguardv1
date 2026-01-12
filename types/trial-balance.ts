@@ -160,6 +160,9 @@ export interface ValidationWarning {
   
   /** Sugestie de remediere */
   suggestion?: string;
+  
+  /** Detalii suplimentare */
+  details?: Record<string, unknown>;
 }
 
 /**
