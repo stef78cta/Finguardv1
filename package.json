@@ -14,7 +14,13 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "db:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > types/database.ts",
-    "db:types:local": "supabase gen types typescript --local > types/database.ts"
+    "db:types:local": "supabase gen types typescript --local > types/database.ts",
+    "clerk:setup": "node scripts/setup-clerk.js",
+    "clerk:setup:dev": "cross-env NODE_ENV=development node scripts/setup-clerk.js",
+    "clerk:setup:prod": "cross-env NODE_ENV=production node scripts/setup-clerk.js",
+    "clerk:verify": "node scripts/verify-clerk-config.js",
+    "clerk:monitor": "node scripts/monitor-clerk-health.js",
+    "clerk:monitor:once": "node scripts/monitor-clerk-health.js --once"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.0.0",
@@ -46,6 +52,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@clerk/backend": "^1.19.3",
     "@playwright/test": "^1.44.0",
     "@types/node": "^20.12.0",
     "@types/papaparse": "^5.3.14",
@@ -54,6 +61,8 @@
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
     "autoprefixer": "^10.4.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "postcss": "^8.4.0",

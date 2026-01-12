@@ -2,6 +2,27 @@
 
 Platformă SaaS pentru analiza automată a situațiilor financiare pentru companiile din România.
 
+## 📊 Status Dezvoltare
+
+**PHASE 0: Foundation Setup** - ✅ **100% COMPLETĂ**
+
+- ✅ Supabase Database Setup (17 tabele, RLS, seed data)
+- ✅ Project Bootstrap (Next.js 14, TypeScript, Tailwind, shadcn/ui)
+- ✅ Authentication Integration (Clerk - complet configurat și verificat)
+- ✅ Supabase Client Setup (browser/server clients, TypeScript types)
+- ✅ File Storage Configuration (Supabase Storage cu RLS)
+- ✅ UI Component Library (shadcn/ui, dark mode, theme toggle)
+- ✅ Dashboard Layout (sidebar, header, responsive design)
+
+**PHASE 1: MVP Features** - 🔄 **În Progres** (2/11 tasks complete)
+
+- ✅ 1.1 UI Component Library
+- ✅ 1.2 Dashboard Layout
+- ⏳ 1.3 Company Management (Next)
+- ⬜ 1.4 Trial Balance Processing Engine
+- ⬜ 1.5 File Upload UI
+- ⬜ 1.6-1.11 (Additional MVP features)
+
 ## 🚀 Caracteristici Principale
 
 - **Procesare Automată**: Upload balanță contabilă (Excel/CSV) cu validare inteligentă
@@ -103,10 +124,26 @@ npm run test
 
 ## 📖 Documentație
 
-- [Database Schema](./docs/database-schema.md)
-- [API Documentation](./docs/API.md)
-- [Deployment Guide](./docs/deployment.md)
-- [User Guide](./docs/user-guide.md)
+### Setup & Configuration
+
+- [Supabase Setup](./TASK_0.0_SUPABASE_SETUP.md) - Database configuration și schema
+- [Authentication Setup](./TASK_0.3_AUTHENTICATION.md) - Clerk integration
+- [Clerk Dashboard Config](./TASK_0.3.1_CLERK_DASHBOARD_CONFIG.md) - Configurare completă Clerk
+- [Clerk Quick Start](./CLERK_AUTOMATION_QUICK_START.md) - Ghid rapid automatizare Clerk
+- [File Storage](./TASK_0.5_STORAGE.md) - Supabase Storage configuration
+- [Environment Setup](./ENV_SETUP.md) - Variabile de mediu
+
+### Development
+
+- [Plan de Implementare](./app-guidelines/plan.md) - Roadmap complet
+- [Tech Stack](./app-guidelines/tech-stack.md) - Detalii tehnologice
+- [Database Schema](./database/README.md) - Schema completă și RLS policies
+
+### Scripts
+
+- **Clerk Automation**: `npm run clerk:verify`, `npm run clerk:monitor`
+- **Database Types**: `npm run db:types` - Regenerare TypeScript types
+- **Testing**: `npm run test`, `npm run test:ui`
 
 ## 🔐 Securitate
 

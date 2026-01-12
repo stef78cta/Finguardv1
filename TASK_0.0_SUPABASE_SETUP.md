@@ -272,38 +272,57 @@ supabase db push
 **✅ Verificare:**
 
 1. Du-te la **Table Editor** în Supabase Dashboard
-2. Verifică că toate tabelele există:
+2. Verifică că toate tabelele există (17 tabele):
 
    ```
-   - users
-   - companies
-   - company_users
-   - trial_balance_imports
-   - trial_balance_accounts
-   - kpi_definitions
-   - kpi_values
-   - financial_statements
-   - financial_statement_lines
-   - ai_recommendations
-   - audit_trails
-   - notifications
-   - subscription_plans
-   - company_subscriptions
-   - webhooks
-   - webhook_logs
-   - api_keys
-   - usage_metrics
+   ✅ Core Tables (3):
+   - users                          # Utilizatori Clerk sync
+   - companies                      # Entități juridice
+   - company_users                  # Relație many-to-many cu roluri
+
+   ✅ Trial Balance (2):
+   - trial_balance_imports          # Sesiuni upload
+   - trial_balance_accounts         # Linii balanță (8 coloane)
+
+   ✅ Chart of Accounts (2):
+   - chart_of_accounts              # 137 conturi sistem RO
+   - account_mappings               # Mapare conturi
+
+   ✅ Financial Statements (4):
+   - financial_statements           # Metadata situații
+   - balance_sheet_lines            # Linii bilanț
+   - income_statement_lines         # Linii P&L
+   - cash_flow_lines                # Linii cash flow
+
+   ✅ KPIs (2):
+   - kpi_definitions                # 23 KPIs definite
+   - kpi_values                     # Valori calculate
+
+   ✅ Reports & Billing (3):
+   - reports                        # Rapoarte generate
+   - subscription_plans             # Planuri abonament
+   - subscriptions                  # Abonamente active
+
+   ✅ Audit (1):
+   - activity_logs                  # Audit trail complet
    ```
 
 3. Verifică seed data:
 
    ```sql
    -- În SQL Editor, rulează:
-   SELECT COUNT(*) FROM kpi_definitions;
-   -- Ar trebui să returneze ~25
+   SELECT COUNT(*) FROM kpi_definitions WHERE is_active = true;
+   -- Ar trebui să returneze 23 KPIs active
 
-   SELECT COUNT(*) FROM chart_of_accounts;
-   -- Ar trebui să returneze ~200+
+   SELECT COUNT(*) FROM chart_of_accounts WHERE is_system = true;
+   -- Ar trebui să returneze 137 conturi sistem RO (OMFP 1802/2014)
+
+   -- Verificare categorii KPI:
+   SELECT category, COUNT(*)
+   FROM kpi_definitions
+   WHERE is_active = true
+   GROUP BY category;
+   -- liquidity: 4, profitability: 6, leverage: 4, efficiency: 4, other: 5
    ```
 
 #### 4.3 Verificare Row Level Security
@@ -647,17 +666,20 @@ curl http://localhost:3000/api/test-db
 ### Database Setup
 
 - [ ] Proiect Supabase creat și activ
-- [ ] Toate cele 18 tabele există în Table Editor
-- [ ] Seed data încărcat (25+ KPIs, 200+ conturi)
-- [ ] Row Level Security activat pe toate tabelele
-- [ ] Politici RLS create și funcționale
+- [ ] Toate cele **17 tabele** există în Table Editor
+- [ ] Seed data încărcat (**23 KPIs**, **137 conturi**)
+- [ ] Row Level Security activat pe **toate** tabelele (100%)
+- [ ] **38 politici RLS** create și funcționale
+- [ ] **4 funcții RLS helper** create (get_current_user_id, user_has_company_access, user_has_company_role, is_admin)
 
 ### Storage Setup
 
 - [ ] Bucket `trial-balance-files` creat
 - [ ] Bucket setat ca privat (nu public)
-- [ ] Storage policies configurate (4 policies)
-- [ ] Limite fișiere setate (10MB, MIME types Excel/CSV)
+- [ ] **4 Storage policies** configurate (INSERT, SELECT, UPDATE, DELETE)
+- [ ] Limite fișiere setate (10MB max, MIME types: .xls, .xlsx, .csv)
+- [ ] **2 funcții helper storage** create (validate_storage_file_path, get_company_storage_stats)
+- [ ] Path format validat: `company_id/year/filename.ext`
 
 ### Configuration
 
@@ -670,8 +692,9 @@ curl http://localhost:3000/api/test-db
 ### TypeScript Types
 
 - [ ] `types/database.ts` generat cu toate tipurile
-- [ ] Tipuri pentru toate cele 18 tabele prezente
+- [ ] Tipuri pentru toate cele **17 tabele** prezente
 - [ ] Build TypeScript trece fără erori: `npm run build`
+- [ ] Type-check reușit: `npm run type-check`
 
 ### Connection Testing
 
@@ -830,5 +853,47 @@ După completarea acestui task:
 - Păstrează parola database într-un loc FOARTE sigur (nu o vei mai putea recupera)
 - Pentru producție, repetă pașii pentru un proiect Supabase separat
 - Folosește organizații Supabase diferite pentru dev/staging/production
+
+---
+
+## 📊 Schema Implementată vs Planificată
+
+### **Ce am implementat: 17 TABELE (MVP Focus)**
+
+Schema actuală este optimizată pentru **MVP (Minimum Viable Product)** și include doar funcționalitățile CORE necesare pentru lansare:
+
+**✅ Implementat:**
+
+- Core auth & companies (3 tabele)
+- Trial balance processing (2 tabele)
+- Chart of accounts (2 tabele)
+- Financial statements (4 tabele - separat pentru bilanț/P&L/cash flow)
+- KPIs (2 tabele)
+- Reports & subscriptions (3 tabele)
+- Audit logs (1 tabelă)
+
+**⏳ Pentru PHASE 2/3 (Enhancement & Scale):**
+
+- `ai_recommendations` - AI insights și recomandări (PHASE 2)
+- `notifications` - Sistem notificări in-app și email (PHASE 2)
+- `webhooks` + `webhook_logs` - Integrări externe (PHASE 3)
+- `api_keys` - Public API access (PHASE 3)
+- `usage_metrics` - Tracking detaliat usage pentru billing (PHASE 2)
+
+**✅ Înlocuiri inteligente:**
+
+- `audit_trails` → `activity_logs` (nume mai descriptiv)
+- `company_subscriptions` → `subscriptions` (mai simplu)
+- `financial_statement_lines` → 3 tabele separate (`balance_sheet_lines`, `income_statement_lines`, `cash_flow_lines`) pentru type-safety mai bună
+
+### **De ce această abordare?**
+
+1. **Faster Time to Market** - Lansăm MVP mai repede
+2. **Easier to Test** - Mai puține componente = testing mai ușor
+3. **Lower Complexity** - Cod mai simplu de menținut
+4. **Iterative Development** - Adăugăm features când avem users care le cer
+5. **Cost Optimization** - Nu plătim pentru features neutilizate
+
+Schema poate fi extinsă oricând prin migrații SQL ulterioare! 🚀
 
 **PHASE 0 ÎNCEPUT** 🚀

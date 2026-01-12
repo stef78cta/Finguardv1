@@ -1,0 +1,45 @@
+{
+  "environment": "production",
+  "appUrl": "https://finguard.ro",
+  "webhookUrl": "https://finguard.ro/api/webhook/clerk",
+  "authentication": {
+    "requireEmailVerification": true,
+    "verifyAtSignUp": true,
+    "passwordPolicy": {
+      "minLength": 10,
+      "requireUppercase": true,
+      "requireLowercase": true,
+      "requireNumbers": true,
+      "requireSpecialChar": true
+    }
+  },
+  "session": {
+    "lifetimeSeconds": 604800,
+    "inactivityTimeoutSeconds": 86400,
+    "multiSessionHandling": "active_sessions"
+  },
+  "security": {
+    "enableBotDetection": true,
+    "enableRateLimiting": true,
+    "rateLimitMaxAttempts": 5,
+    "rateLimitWindowMinutes": 15,
+    "blockDisposableEmails": true
+  },
+  "paths": {
+    "signIn": "/sign-in",
+    "signUp": "/sign-up",
+    "afterSignIn": "/dashboard",
+    "afterSignUp": "/dashboard",
+    "afterSignOut": "/"
+  },
+  "webhookEvents": [
+    "user.created",
+    "user.updated",
+    "user.deleted"
+  ],
+  "notifications": {
+    "slackWebhook": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+    "alertOnFailure": true,
+    "healthCheckIntervalMinutes": 5
+  }
+}

@@ -27,6 +27,16 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+!.env.example
+
+# config files (keep only .example files)
+/config/*.json
+!/config/*.json.example
+
+# scripts output and logs
+/scripts/*.log
+/scripts/output/
+/scripts/temp/
 
 # vercel
 .vercel

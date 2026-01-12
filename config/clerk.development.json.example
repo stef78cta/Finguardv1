@@ -1,0 +1,40 @@
+{
+  "environment": "development",
+  "appUrl": "http://localhost:3000",
+  "webhookUrl": "https://your-ngrok-url.ngrok.io/api/webhook/clerk",
+  "authentication": {
+    "requireEmailVerification": false,
+    "verifyAtSignUp": false,
+    "passwordPolicy": {
+      "minLength": 8,
+      "requireUppercase": true,
+      "requireLowercase": true,
+      "requireNumbers": true,
+      "requireSpecialChar": false
+    }
+  },
+  "session": {
+    "lifetimeSeconds": 86400,
+    "inactivityTimeoutSeconds": 43200,
+    "multiSessionHandling": "active_sessions"
+  },
+  "security": {
+    "enableBotDetection": true,
+    "enableRateLimiting": true,
+    "rateLimitMaxAttempts": 10,
+    "rateLimitWindowMinutes": 15,
+    "blockDisposableEmails": false
+  },
+  "paths": {
+    "signIn": "/sign-in",
+    "signUp": "/sign-up",
+    "afterSignIn": "/dashboard",
+    "afterSignUp": "/dashboard",
+    "afterSignOut": "/"
+  },
+  "webhookEvents": [
+    "user.created",
+    "user.updated",
+    "user.deleted"
+  ]
+}
