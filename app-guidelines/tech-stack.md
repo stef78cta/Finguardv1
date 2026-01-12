@@ -2,9 +2,9 @@
 
 ## Ghid Tehnic Complet pentru Dezvoltatori
 
-**Versiune:** 1.0  
-**Data:** Ianuarie 2026  
-**Status:** Foundation Setup
+**Versiune:** 1.1  
+**Data:** 12 Ianuarie 2026  
+**Status:** MVP Development - Phase 1 In Progress
 
 ---
 
@@ -74,8 +74,8 @@ FinGuard este o aplicație SaaS de **analiză financiară automată** pentru com
 
 **Librării pentru Procesare Fișiere:**
 
-- **SheetJS (xlsx)** - Citire Excel/CSV în browser
-- **PapaParse** - CSV parsing pentru fișiere mari
+- **SheetJS (xlsx)** - ✅ Implementat în `lib/calculations/file-parser.ts` - Citire Excel/CSV în browser cu suport pentru .xlsx/.xls, detectare automată format balanță, mapare dinamică coloane
+- **PapaParse** - Pregătit pentru Task 1.5 - CSV parsing pentru fișiere mari cu auto-detectare delimiter
 
 **Export Rapoarte:**
 
@@ -103,14 +103,20 @@ FinGuard este o aplicație SaaS de **analiză financiară automată** pentru com
 
 **Securitate:**
 
-- **express-rate-limit** - Rate limiting
-- **Zod/Joi** - Validare input
-- **CORS** - Cross-origin configuration
+- **express-rate-limit** - Rate limiting (planificat pentru Phase 2)
+- **Zod** - ✅ Implementat - Validare input în API routes și formulare
+- **CORS** - Cross-origin configuration (implicit în Next.js)
 
 **Procesare Server-side:**
 
-- **Multer** - File uploads
-- **xlsx/csv-parser** - Procesare fișiere pe server
+- **Trial Balance Processing Engine** - ✅ Implementat în `lib/calculations/`
+  - `file-parser.ts` (~300 linii) - Parser Excel/CSV cu detectare automată format
+  - `normalizer.ts` (~250 linii) - Normalizare date la 8 coloane standard
+  - `validator.ts` (~400 linii) - 16 validări tehnice (8 critice + 8 avertismente)
+  - `processor.ts` (~200 linii) - Orchestrator principal pentru procesare end-to-end
+  - Performanță: <500ms pentru 1000 linii balanță
+- **Multer** - File uploads (va fi integrat în Task 1.6)
+- **xlsx/csv-parser** - ✅ În uz prin SheetJS și PapaParse
 
 **Logging & Monitoring:**
 
@@ -120,14 +126,80 @@ FinGuard este o aplicație SaaS de **analiză financiară automată** pentru com
 
 ### 2.3 Infrastructure & DevOps
 
-| Serviciu           | Scop                          |
-| ------------------ | ----------------------------- |
-| **Vercel**         | Hosting Frontend + API Routes |
-| **Supabase Cloud** | PostgreSQL + Storage + RLS    |
-| **Redis Cloud**    | Queue storage                 |
-| **GitHub Actions** | CI/CD                         |
-| **Sentry**         | Error monitoring              |
-| **Grafana**        | Metrics dashboard (opțional)  |
+| Serviciu           | Status        | Scop                             | Detalii                                                                                       |
+| ------------------ | ------------- | -------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Vercel**         | ⬜ Planificat | Hosting Frontend + API Routes    | Deployment automatizat din GitHub                                                             |
+| **Supabase Cloud** | ✅ Activ      | PostgreSQL + Storage + RLS       | Proiect: vdxbxfvzdkbilvfwmgnw (eu-central-1), 17 tabele, RLS activ, storage bucket configurat |
+| **Clerk**          | ✅ Activ      | Authentication & User Management | Webhook sync cu Supabase, protected routes, trial 14 zile automat                             |
+| **Redis Cloud**    | ⬜ Planificat | Queue storage pentru BullMQ      | Va fi integrat în Phase 2 pentru background jobs                                              |
+| **GitHub Actions** | ⬜ Planificat | CI/CD                            | Linting, type-check, testing automatizat                                                      |
+| **Sentry**         | ⬜ Planificat | Error monitoring                 | Integration în Phase 2                                                                        |
+| **Grafana**        | ⬜ Opțional   | Metrics dashboard                | Post-MVP                                                                                      |
+
+---
+
+## 2.4 Status Implementare
+
+### Phase 0: Foundation Setup - ✅ COMPLETĂ (100%)
+
+| Componentă                  | Status         | Detalii                                                    |
+| --------------------------- | -------------- | ---------------------------------------------------------- |
+| **Next.js 14 + TypeScript** | ✅ Implementat | App Router configurat, build funcțional                    |
+| **Supabase**                | ✅ Implementat | 17 tabele, RLS policies, seed data (23 KPIs + 137 conturi) |
+| **Clerk Authentication**    | ✅ Implementat | Sign-in/up, middleware, webhook sync cu Supabase           |
+| **Supabase Storage**        | ✅ Implementat | Bucket trial-balance-files, 10MB limit, 4 RLS policies     |
+| **TypeScript Types**        | ✅ Implementat | Database types auto-generated, type safety complet         |
+
+### Phase 1: MVP Features - 🔄 ÎN PROGRES (36%)
+
+| Componentă                 | Status         | Detalii                                                                          |
+| -------------------------- | -------------- | -------------------------------------------------------------------------------- |
+| **shadcn/ui Components**   | ✅ Implementat | 9 componente (Button, Input, Card, Dialog, Table, Tabs, Progress, Select, Toast) |
+| **Theme System**           | ✅ Implementat | next-themes, ThemeProvider, ThemeToggle component                                |
+| **Dashboard Layout**       | ✅ Implementat | Sidebar navigation, header, company selector, responsive                         |
+| **Company Management**     | ✅ Implementat | CRUD API + UI, validare CUI, useCompanies hook                                   |
+| **Trial Balance Engine**   | ✅ Implementat | Parser (Excel/CSV), Normalizer, Validator (16 validări)                          |
+| **File Upload UI**         | ⬜ Pending     | Task 1.5 - următorul în dezvoltare                                               |
+| **Upload API Endpoints**   | ⬜ Pending     | Task 1.6                                                                         |
+| **KPI Calculation Engine** | ⬜ Pending     | Task 1.7 - 15 KPIs esențiale                                                     |
+| **KPI Dashboard**          | ⬜ Pending     | Task 1.8                                                                         |
+| **Financial Statements**   | ⬜ Pending     | Task 1.9                                                                         |
+| **PDF Report Generation**  | ⬜ Pending     | Task 1.10                                                                        |
+| **Reports UI**             | ⬜ Pending     | Task 1.11                                                                        |
+
+### Librării în Uz Activ
+
+**Frontend:**
+
+- ✅ `next` (14.x) - Framework principal cu App Router
+- ✅ `react` (18.x) - UI Library
+- ✅ `typescript` (5.x) - Type safety complet, strict mode
+- ✅ `tailwindcss` (3.x) - Styling system
+- ✅ `@radix-ui/*` - UI primitives prin shadcn/ui (9 componente instalate)
+- ✅ `next-themes` - Theme management (dark/light mode funcțional)
+- ✅ `lucide-react` - Iconuri SVG pentru navigation și UI
+- ✅ `class-variance-authority` - Variante componente UI
+- ✅ `clsx` + `tailwind-merge` - Class utilities pentru conditional styling
+- ✅ `react-hook-form` - Gestionare formulare (CompanyForm implementat)
+- ✅ `xlsx` - Excel parsing implementat în file-parser.ts
+- ⬜ `papaparse` - CSV parsing (pregătit pentru Task 1.5)
+- ⬜ `decimal.js` - Calcule financiare precise (va fi folosit în Task 1.7 KPI Engine)
+- ⬜ `@ant-design/charts` sau `recharts` - Vizualizări date (Task 1.8)
+
+**Backend:**
+
+- ✅ `@supabase/supabase-js` - Database client (browser + server)
+- ✅ `@supabase/ssr` - Server-side Supabase pentru API routes
+- ✅ `@clerk/nextjs` - Authentication complet integrat
+- ✅ `zod` - Schema validation în API + forms
+- ⬜ `bullmq` + `redis` - Job queue pentru background processing (Phase 2)
+
+**Dev Tools:**
+
+- ✅ `eslint` + `prettier` - Code quality
+- ✅ `typescript-eslint` - TypeScript linting
+- ⬜ `jest` + `@testing-library/react` - Unit testing (Phase 1)
+- ⬜ `playwright` - E2E testing (Phase 1)
 
 ---
 
@@ -590,11 +662,11 @@ INSERT INTO kpi_definitions (code, name, category, formula, unit) VALUES
 
 ```typescript
 // src/lib/auth/clerk.ts
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware } from '@clerk/nextjs/server';
 
 export default clerkMiddleware({
-  publicRoutes: ["/", "/sign-in", "/sign-up", "/api/webhook/clerk"],
-  ignoredRoutes: ["/api/webhook/clerk"],
+  publicRoutes: ['/', '/sign-in', '/sign-up', '/api/webhook/clerk'],
+  ignoredRoutes: ['/api/webhook/clerk'],
 });
 ```
 
@@ -684,14 +756,14 @@ Pentru fișiere mari (>1000 linii), procesarea se face în background:
 
 ```typescript
 // Adăugare job în queue
-await balanceQueue.add("process-balance", {
+await balanceQueue.add('process-balance', {
   importId: uuid,
   filePath: storagePath,
   companyId: companyId,
 });
 
 // Worker processing
-const worker = new Worker("balance-queue", async (job) => {
+const worker = new Worker('balance-queue', async (job) => {
   const { importId, filePath } = job.data;
 
   // 1. Parse file
@@ -840,7 +912,7 @@ const UploadSchema = z.object({
 });
 
 // ✅ Use decimal.js pentru calcule financiare
-import Decimal from "decimal.js";
+import Decimal from 'decimal.js';
 const total = new Decimal(amount1).plus(amount2).toNumber();
 
 // ❌ NU folosi number pentru sume financiare
@@ -1117,6 +1189,51 @@ src/
 
 ---
 
+## Următorii Pași Prioritari
+
+### Task 1.5: File Upload UI (În dezvoltare)
+
+- [ ] Componentă drag & drop cu `react-dropzone`
+- [ ] Progress bar pentru upload și procesare
+- [ ] Preview primele 10 linii după upload
+- [ ] Selector dată obligatoriu (calendar widget)
+- [ ] Afișare erori de validare cu indicarea liniei
+- **Estimat:** 2-3 zile
+
+### Task 1.6: Upload API Endpoints
+
+- [ ] `POST /api/upload` - upload și procesare fișier
+- [ ] `GET /api/companies/[id]/imports` - listă imports
+- [ ] `GET /api/imports/[id]` - detalii import
+- [ ] Integration cu Trial Balance Processing Engine (Task 1.4 ✅)
+- **Estimat:** 2 zile
+
+### Task 1.7: KPI Calculation Engine - CRITICAL
+
+- [ ] Implementare 15 KPI-uri esențiale (lichiditate, profitabilitate, leverage, eficiență)
+- [ ] Integration cu `decimal.js` pentru calcule financiare precise
+- [ ] Formule configurabile din `kpi_definitions` table
+- [ ] Stocare rezultate în `kpi_values`
+- **Estimat:** 3-4 zile
+
+### Milestone: MVP Core Functional (estimat săptămâna 4)
+
+După completarea Task-urilor 1.5, 1.6, 1.7:
+
+- ✅ Upload balanță funcțional end-to-end
+- ✅ Procesare și validare automată
+- ✅ Calculare KPI-uri esențiale
+- 🎯 **Ready pentru Task 1.8 (KPI Dashboard UI)**
+
+---
+
 **Document menținut de:** Engineering Team  
-**Ultima actualizare:** Ianuarie 2026  
-**Next review:** După finalizarea Phase 0
+**Ultima actualizare:** 12 Ianuarie 2026  
+**Next review:** După finalizarea Phase 1 MVP  
+**Progres curent:** Phase 0 ✅ 100% | Phase 1 🔄 36% (4/11 tasks)
+
+**Referințe:**
+
+- Plan complet: `app-guidelines/plan.md`
+- PRD: `app-guidelines/PRD-generator-final1.md`
+- Ghid comentarii: `.cursor/rules/commenting-guidelines.mdc`
